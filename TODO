@@ -1,0 +1,4 @@
+- [ ] logger system
+- [ ] persist websocket connection
+- [ ] close websocket gracely
+- [ ] start fastapi server automatically[configurable]

@@ -35,6 +35,9 @@ function App() {
   async function tone_command(input: string) : Promise<Tone> {
     return await invoke("tone", {input})
   }
+  async function play(input: string) : Promise<Tone> {
+    return await invoke("play", {input})
+  }
   
   async function submit_pinyin() {
     const splits = await split(pinyin)
@@ -46,6 +49,7 @@ function App() {
     };
     py_list.push(seg)
     console.log(py_list)
+    play(tone.pinyin)
     setPinyin('')
   }
 
