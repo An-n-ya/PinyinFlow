@@ -6,6 +6,7 @@ import TextField from '@mui/material/TextField';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import {info} from '@tauri-apps/plugin-log';
 
 interface InputSegment {
   raw: string;
@@ -19,15 +20,8 @@ interface Tone {
 }
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
   const [pinyin, setPinyin] = useState("");
   const [py_list, setPyList] = useState<InputSegment[]>([]);
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
   
   async function split(input: string) : Promise<string> {
     return await invoke("split", {input})
@@ -47,7 +41,9 @@ function App() {
       raw: pinyin,
       splits, tone
     };
+    //FIXME: is this reactive?
     py_list.push(seg)
+    info("[js]hello from js input")
     console.log(py_list)
     play(tone.pinyin)
     setPinyin('')

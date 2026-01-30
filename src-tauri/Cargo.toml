@@ -2,7 +2,7 @@
 name = "pinyin"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["Annya"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -30,6 +30,8 @@ byteorder = "1.5.0"
 reqwest-websocket = "0.5.1"
 futures-util = "0.3.31"
 futures-lite = "2.6.1"
+tauri-plugin-log = "2"
+log = "0.4"
 
 
 [dev-dependencies]

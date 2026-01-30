@@ -1,11 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::io::Cursor;
-
-use byteorder::{LittleEndian, ReadBytesExt};
-use rodio::Source;
-
 fn main() {
     // initialize server
     pinyin_lib::run()
@@ -17,28 +12,28 @@ fn main() {
 mod test {
     use dollop::split;
     use rodio::{OutputStream, Sink};
-    use super::*;
-    
+
     #[test]
     fn test_dollop() {
         let res = split("nihaoya zheshiyigeceshi");
         print!("{res}");
     }
-    
+
     async fn test_websocket() -> Result<String, String> {
         // Extends the `reqwest::RequestBuilder` to allow WebSocket upgrades.
-        use reqwest_websocket::RequestBuilderExt;
+        use futures_lite::stream::StreamExt;
+        use futures_util::sink::SinkExt;
         use reqwest::Client;
         use reqwest_websocket::Message;
-        use futures_util::sink::SinkExt;
-        use futures_lite::stream::StreamExt;
-        
+        use reqwest_websocket::RequestBuilderExt;
+
         // Creates a GET request, upgrades and sends it.
         let response = Client::default()
             .get("ws://localhost:8000/test")
             .upgrade() // Prepares the WebSocket upgrade.
             .send()
-            .await.unwrap();
+            .await
+            .unwrap();
 
         // Turns the response into a WebSocket stream.
         let mut websocket = response.into_websocket().await.unwrap();
@@ -53,12 +48,12 @@ mod test {
                 return Ok(text);
             }
         }
-        
+
         Ok("".to_string())
     }
-    
-    use tokio::time::sleep;
+
     use std::time::Duration;
+    use tokio::time::sleep;
 
     async fn my_async_function() -> u32 {
         sleep(Duration::from_millis(10)).await;
@@ -74,24 +69,29 @@ mod test {
 
     async fn pcm_bytes_from_ws() -> Result<Vec<u8>, String> {
         // Extends the `reqwest::RequestBuilder` to allow WebSocket upgrades.
-        use reqwest_websocket::RequestBuilderExt;
+        use futures_lite::stream::StreamExt;
+        use futures_util::sink::SinkExt;
         use reqwest::Client;
         use reqwest_websocket::Message;
-        use futures_util::sink::SinkExt;
-        use futures_lite::stream::StreamExt;
-        
+        use reqwest_websocket::RequestBuilderExt;
+
         // Creates a GET request, upgrades and sends it.
         let response = Client::default()
             .get("ws://localhost:8000/play")
             .upgrade() // Prepares the WebSocket upgrade.
             .send()
-            .await.unwrap();
+            .await
+            .unwrap();
 
         // Turns the response into a WebSocket stream.
         let mut websocket = response.into_websocket().await.unwrap();
 
         // The WebSocket implements `Sink<Message>`.
-        let _ = websocket.send(Message::Text("ni3 hao3 ya5 zhe4 shi4 yi2 ge4 ce4 shi4".into())).await;
+        let _ = websocket
+            .send(Message::Text(
+                "ni3 hao3 ya5 zhe4 shi4 yi2 ge4 ce4 shi4".into(),
+            ))
+            .await;
 
         // The WebSocket is also a `TryStream` over `Message`s.
         while let Some(message) = websocket.try_next().await.unwrap() {
@@ -99,18 +99,18 @@ mod test {
                 return Ok(text.to_vec());
             }
         }
-        
+
         Ok(vec![])
     }
-    
+
     #[tokio::test]
     async fn play_pcm_from_ws() {
         // 生成测试用 PCM 数据：440Hz 正弦波（16bit 单声道 44.1kHz，持续 2 秒）
         let pcm_bytes = pcm_bytes_from_ws().await.unwrap();
 
         // 初始化音频输出设备
-        let stream_handle = rodio::OutputStreamBuilder::open_default_stream()
-        .expect("open default audio stream");
+        let stream_handle =
+            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = rodio::Sink::connect_new(&stream_handle.mixer());
 
         // 将 PCM 字节转换为音频源并播放
@@ -135,8 +135,8 @@ mod test {
         }
 
         // 初始化音频输出设备
-        let stream_handle = rodio::OutputStreamBuilder::open_default_stream()
-        .expect("open default audio stream");
+        let stream_handle =
+            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = rodio::Sink::connect_new(&stream_handle.mixer());
 
         // 将 PCM 字节转换为音频源并播放
