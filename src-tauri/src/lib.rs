@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use anyhow::Result;
 
 #[derive(Error, Debug)]
 pub enum DataStoreError {
@@ -25,12 +26,12 @@ fn greet(name: &str) -> String {
 }
 #[tauri::command]
 fn split(input: &str) -> String {
-    eprintln!("split {input}");
+    log::info!("split {input}");
     dollop::split(input)
 }
 #[tauri::command]
-async fn tone(input: &str) -> Result<PinyinRespond, ()> {
-    eprintln!("tone {input}");
+async fn tone(input: &str) -> Result<PinyinRespond, String> {
+    log::info!("tone {input}");
     let client = reqwest::Client::new();
 
     let req_body = PinyinRequest {
@@ -47,13 +48,13 @@ async fn tone(input: &str) -> Result<PinyinRespond, ()> {
         .await
         .unwrap();
 
-    eprintln!("tone {res}");
+    log::info!("tone {res}");
     let v: PinyinRespond = serde_json::from_str(&res).unwrap();
 
     Ok(v)
 }
 
-async fn pcm_bytes_from_ws(pinyin: &str) -> Result<Vec<u8>, String> {
+async fn pcm_bytes_from_ws(pinyin: &str) -> Result<Vec<u8>> {
     // Extends the `reqwest::RequestBuilder` to allow WebSocket upgrades.
     use futures_lite::stream::StreamExt;
     use futures_util::sink::SinkExt;
@@ -66,19 +67,18 @@ async fn pcm_bytes_from_ws(pinyin: &str) -> Result<Vec<u8>, String> {
         .get("ws://localhost:8000/play")
         .upgrade() // Prepares the WebSocket upgrade.
         .send()
-        .await
-        .unwrap();
+        .await?;
 
     // Turns the response into a WebSocket stream.
-    let mut websocket = response.into_websocket().await.unwrap();
+    let mut websocket = response.into_websocket().await?;
 
     // The WebSocket implements `Sink<Message>`.
-    let _ = websocket.send(Message::Text(pinyin.into())).await;
+    websocket.send(Message::Text(pinyin.into())).await?;
 
     // The WebSocket is also a `TryStream` over `Message`s.
-    while let Some(message) = websocket.try_next().await.unwrap() {
+    while let Some(message) = websocket.try_next().await? {
         if let Message::Binary(text) = message {
-            eprintln!("got pcm data");
+            log::info!("got pcm data");
             let _ = websocket.close(reqwest_websocket::CloseCode::Normal, None);
             return Ok(text.to_vec());
         }
@@ -109,9 +109,9 @@ fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
     )
 }
 async fn play_pcm_from_ws(pinyin: &str) {
-    eprintln!("pcm from ws: pinyin: {}", pinyin);
+    log::info!("pcm from ws: pinyin: {}", pinyin);
     let pcm_bytes = pcm_bytes_from_ws(pinyin).await.unwrap();
-    eprintln!("pcm len: {}", pcm_bytes.len());
+    log::info!("pcm len: {}", pcm_bytes.len());
 
     // 初始化音频输出设备
     let stream_handle =
@@ -144,5 +144,4 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
     
-    log::info!("[rust]log plugin test!");
 }

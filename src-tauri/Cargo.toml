@@ -32,6 +32,7 @@ futures-util = "0.3.31"
 futures-lite = "2.6.1"
 tauri-plugin-log = "2"
 log = "0.4"
+anyhow = "1.0.100"
 
 
 [dev-dependencies]

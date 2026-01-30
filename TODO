@@ -1,7 +1,7 @@
-- [ ] logger system
+- [x] logger system
 - [ ] persist websocket connection
 - [ ] close websocket gracely
 - [ ] start fastapi server automatically[configurable]
-- [ ] rust error management
+- [x] rust error management
 - [ ] time rodio initialization and pcm data transfering process
 - [ ] compare http and websocket on play interface
