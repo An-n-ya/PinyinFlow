@@ -2,11 +2,10 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
 import {info} from '@tauri-apps/plugin-log';
+import AppHeader from "./ui/Header";
+import { InputArea } from "./ui/InputArea";
+import { ChatHistory } from "./ui/ChatHistory";
 
 interface InputSegment {
   raw: string;
@@ -19,8 +18,108 @@ interface Tone {
   py_styled: string;
 }
 
+
 function App() {
-  const [pinyin, setPinyin] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      text: "你好，这是一个测试",
+      sender: "user",
+      timestamp: "10:00",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 2,
+      text: "ahjfklahdsjfhajlkdsh",
+      sender: "ai",
+      timestamp: "10:01",
+      isPlaying: false
+    },
+    {
+      id: 1,
+      text: "你好，这是一个测试",
+      sender: "user",
+      timestamp: "10:00",
+      isPlaying: false
+    },
+    {
+      id: 1,
+      text: "你好，这是一个测试",
+      sender: "user",
+      timestamp: "10:00",
+      isPlaying: false
+    },
+    {
+      id: 1,
+      text: "你好，这是一个测试",
+      sender: "user",
+      timestamp: "10:00",
+      isPlaying: false
+    },
+    {
+      id: 1,
+      text: "你好，这是一个测试",
+      sender: "user",
+      timestamp: "10:00",
+      isPlaying: false
+    },
+  ]);
   const [py_list, setPyList] = useState<InputSegment[]>([]);
   
   async function split(input: string) : Promise<string> {
@@ -33,7 +132,7 @@ function App() {
     return await invoke("play", {input})
   }
   
-  async function submit_pinyin() {
+  async function submit_pinyin(pinyin: string) {
     // const splits = await split(pinyin)
     // const tone = await tone_command(splits)
     // if (splits.trim().length == 0) return
@@ -45,38 +144,27 @@ function App() {
     // py_list.push(seg)
     info(`[js] submit pinyin {pinyin}`)
     // play(tone.pinyin)
+    const newMsg: Message = {
+      id: Date.now(),
+      text: pinyin,
+      sender: "user",
+      timestamp: new Date().toLocaleDateString([], {hour: '2-digit', minute: '2-digit'}) 
+    }
+    setMessages(prev => [...prev, newMsg])
     play(pinyin)
-    setPinyin('')
   }
 
   return (
     <main className="container">
+      <AppHeader/>
       <Stack direction="row" spacing={2} sx={{
-      justifyContent: "center"}}>
-        <Stack sx={{width: 400}}>
-          <TextField
-            id="outlined-multiline-static"
-            label="pinyin"
-            multiline
-            rows={4}
-            sx={{width: "100%"}}
-            onChange={(e) => {
-              setPinyin(e.target.value.trim())
-            }}
-            onKeyDown={(e) => {
-              if (e.key == 'Enter' || e.code == "Space") {
-                submit_pinyin()
-              }
-            }}
-            value={pinyin}
-          />
-          <List sx={{width: '100%', overflow: "auto", height: 800}}>
-            {py_list.map((py, index) => (
-              <ListItem key={`${py.raw}-${index}`}>
-                <ListItemText primary={py.tone.py_styled} sx={{textAlign: 'end'}}/>
-              </ListItem>
-            )).reverse()} 
-          </List>
+        justifyContent: "center",
+        overflow: "hidden",
+        height: "100%"
+      }}>
+        <Stack sx={{height: '100%', width: '100%', alignItems: 'center'}}>
+          <ChatHistory messages={messages}></ChatHistory>
+          <InputArea onSendMessage={submit_pinyin}/>
         </Stack>
       </Stack>
     </main>
