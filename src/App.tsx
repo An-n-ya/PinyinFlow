@@ -34,18 +34,18 @@ function App() {
   }
   
   async function submit_pinyin() {
-    const splits = await split(pinyin)
-    const tone = await tone_command(splits)
-    if (splits.trim().length == 0) return
-    const seg: InputSegment = {
-      raw: pinyin,
-      splits, tone
-    };
-    //FIXME: is this reactive?
-    py_list.push(seg)
-    info("[js]hello from js input")
-    console.log(py_list)
-    play(tone.pinyin)
+    // const splits = await split(pinyin)
+    // const tone = await tone_command(splits)
+    // if (splits.trim().length == 0) return
+    // const seg: InputSegment = {
+    //   raw: pinyin,
+    //   splits, tone
+    // };
+    // //FIXME: is this reactive?
+    // py_list.push(seg)
+    info(`[js] submit pinyin {pinyin}`)
+    // play(tone.pinyin)
+    play(pinyin)
     setPinyin('')
   }
 

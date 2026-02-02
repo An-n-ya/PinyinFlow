@@ -1,6 +1,11 @@
+mod device;
+
 use serde::{Deserialize, Serialize};
+use tauri::{Manager, State};
 use thiserror::Error;
 use anyhow::Result;
+use anyhow_tauri::TAResult;
+use crate::device::audio::AudioDevice;
 
 #[derive(Error, Debug)]
 pub enum DataStoreError {
@@ -19,10 +24,6 @@ struct PinyinRespond {
     pinyin: String,
     py_styled: String,
     tone: String,
-}
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
 }
 #[tauri::command]
 fn split(input: &str) -> String {
@@ -86,61 +87,42 @@ async fn pcm_bytes_from_ws(pinyin: &str) -> Result<Vec<u8>> {
 
     Ok(vec![])
 }
-use byteorder::{LittleEndian, ReadBytesExt};
-use rodio::Source;
-use std::io::Cursor;
-fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
-    // 1. 将字节流包装为 Cursor（可读取的缓冲区）
-    let mut cursor = Cursor::new(pcm_bytes);
-    // 2. 解析 16bit 小端 PCM 数据为 i16 采样值（根据实际格式调整 LittleEndian/BigEndian）
-    let samples: Vec<f32> = std::iter::from_fn(move || {
-        cursor
-            .read_i16::<LittleEndian>()
-            .ok()
-            .map(|f| f as f32 / 32767.0)
-    })
-    .collect();
-
-    // 3. 将采样值转换为 rodio 音频源，设置采样率（44100 Hz）
-    rodio::buffer::SamplesBuffer::new(
-        1,       // 声道数：1=单声道，2=立体声
-        24000,   // 采样率
-        samples, // 解析后的 PCM 采样数据
-    )
-}
-async fn play_pcm_from_ws(pinyin: &str) {
+async fn play_pcm_from_ws(state: State<'_, AppData>, pinyin: &str) {
     log::info!("pcm from ws: pinyin: {}", pinyin);
     let pcm_bytes = pcm_bytes_from_ws(pinyin).await.unwrap();
     log::info!("pcm len: {}", pcm_bytes.len());
+    
+    state.audio_device.play_pcm_bytes(&pcm_bytes);
 
-    // 初始化音频输出设备
-    let stream_handle =
-        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-    let sink = rodio::Sink::connect_new(&stream_handle.mixer());
-
-    // 将 PCM 字节转换为音频源并播放
-    let source = pcm_bytes_to_source(&pcm_bytes);
-    sink.append(source);
-
-    // 等待播放完成
-    sink.sleep_until_end();
+    return;
 }
 #[tauri::command]
-async fn play(input: String) -> String {
-    play_pcm_from_ws(&input).await;
-    return "OK".to_string();
+async fn play(state: State<'_, AppData>,input: String) -> TAResult<String> {
+    play_pcm_from_ws(state, &input).await;
+    return Ok("OK".to_string());
 }
+
+
+#[derive(Default)]
+struct AppData {
+    audio_device: AudioDevice
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            app.manage(AppData::default());
+            Ok(())
+        })
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Info)
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, split, tone, play])
+        .invoke_handler(tauri::generate_handler![split, tone, play])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
     
