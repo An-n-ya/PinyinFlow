@@ -1,12 +1,11 @@
 mod device;
 
-use tokio::sync::Mutex;
+use reqwest_websocket::Message;
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, State};
-use anyhow::{Context, Result};
+use anyhow::{Result, bail};
 use anyhow_tauri::TAResult;
-use crate::device::{audio::AudioDevice, websocket::WSDevice};
+use crate::device::{audio::AudioDevice, websocket::WsClient };
 
 #[derive(Serialize, Debug)]
 struct PinyinRequest {
@@ -48,41 +47,38 @@ async fn tone(input: &str) -> Result<PinyinRespond, String> {
     Ok(v)
 }
 
-async fn play_pcm_from_ws(state: &State<'_, Mutex<AppData>>, pinyin: &str) -> TAResult<()> {
-    let mut state = state.lock().await;
-    let pcm_bytes = state.websocket.pcm_bytes(pinyin).await.with_context(|| format!("request pcm bytes of '{pinyin}' failed"))?;
-    
-    state.audio_device.play_pcm_bytes(&pcm_bytes);
+pub fn play_pcm_from_ws(msg: Message) -> Result<()> {
+    if let Message::Binary(pcm_bytes) = msg {
+        log::debug!("receiving message success");
+        AudioDevice::play_pcm_bytes(&pcm_bytes);
+        return Ok(());
+    }
 
-    Ok(())
+    bail!("failed to parse text message")
 }
 #[tauri::command]
-async fn play(state: State<'_, Mutex<AppData>>,input: String) -> TAResult<()> {
-    play_pcm_from_ws(&state, &input).await?;
+async fn play(input: String) -> TAResult<()> {
+    WsClient::send_text(input)?;
     return Ok(());
 }
 
-
-#[derive(Default)]
-struct AppData {
-    audio_device: AudioDevice,
-    websocket: WSDevice
-}
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .setup(|app| {
-            app.manage(Mutex::new(AppData::default()));
-            Ok(())
-        })
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .level(tauri_plugin_log::log::LevelFilter::Debug)
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        .setup(|_app| {
+            log::info!("setup started");
+            AudioDevice::init()?;
+            WsClient::init("ws://localhost:8000/play")?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![split, tone, play])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Stack from '@mui/material/Stack';
-import {info} from '@tauri-apps/plugin-log';
+import {info, error} from '@tauri-apps/plugin-log';
 import AppHeader from "./ui/Header";
 import { InputArea } from "./ui/InputArea";
 import { ChatHistory } from "./ui/ChatHistory";
@@ -128,8 +128,14 @@ function App() {
   async function tone_command(input: string) : Promise<Tone> {
     return await invoke("tone", {input})
   }
-  async function play(input: string) : Promise<Tone> {
-    return await invoke("play", {input})
+  async function play(input: string) {
+    try { 
+      await invoke("play", {input})
+    } catch(error_msg) {
+
+      error(`${error_msg}`);
+      console.error(error_msg)
+    }
   }
   
   async function submit_pinyin(pinyin: string) {
@@ -142,7 +148,7 @@ function App() {
     // };
     // //FIXME: is this reactive?
     // py_list.push(seg)
-    info(`[js] submit pinyin {pinyin}`)
+    //info(`[js] submit pinyin {pinyin}`)
     // play(tone.pinyin)
     const newMsg: Message = {
       id: Date.now(),

@@ -1,29 +1,37 @@
 use byteorder::{LittleEndian, ReadBytesExt};
-use rodio::{OutputStream, Sink, Source};
-use std::io::Cursor;
-pub struct AudioDevice {
-    stream: OutputStream,
-    sink: Sink
+use rodio::{Source};
+use std::{io::Cursor, sync::{OnceLock, mpsc::Sender}};
+use anyhow::Result;
+pub struct AudioDevice {}
+
+static AUDIO_SINK: OnceLock<Sender<AudioRequest>> = OnceLock::new();
+enum AudioRequest {
+    Play(Vec<u8>)
 }
-impl Default for AudioDevice {
-    fn default() -> Self {
-        let stream_handle =
-            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = rodio::Sink::connect_new(&stream_handle.mixer());
-        Self {
-            stream: stream_handle,
-            sink
-        }
-    }
-}
+
 impl AudioDevice {
-    pub fn play_pcm_bytes(&self, pcm_bytes: &[u8]) {
-        let source = Self::pcm_bytes_to_source(pcm_bytes);
-        self.sink.append(source);
-
-        // 等待播放完成
-        self.sink.sleep_until_end();
-
+    pub fn init() -> Result<()> {
+        let (tx, rx) = std::sync::mpsc::channel::<AudioRequest>();
+        AUDIO_SINK.set(tx).map_err(|_| anyhow::anyhow!("already initialized"))?;
+        std::thread::spawn(move || {
+            for request in rx {
+                let stream_handle =
+                    rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+                match request {
+                    AudioRequest::Play(pcm_bytes) => {
+                        let sink = rodio::Sink::connect_new(&stream_handle.mixer());
+                        let source = Self::pcm_bytes_to_source(&pcm_bytes);
+                        sink.append(source);
+                        // 等待播放完成
+                        sink.sleep_until_end();
+                    }
+                }
+            }
+        });
+        Ok(())
+    }
+    pub fn play_pcm_bytes(pcm_bytes: &[u8]) {
+        AUDIO_SINK.get().unwrap().send(AudioRequest::Play(pcm_bytes.to_vec())).expect("audio sink channel");
     }
     fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
         // 1. 将字节流包装为 Cursor（可读取的缓冲区）
