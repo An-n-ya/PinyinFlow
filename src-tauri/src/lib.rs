@@ -47,15 +47,6 @@ async fn tone(input: &str) -> Result<PinyinRespond, String> {
     Ok(v)
 }
 
-pub fn play_pcm_from_ws(msg: Message) -> Result<()> {
-    if let Message::Binary(pcm_bytes) = msg {
-        log::debug!("receiving message success");
-        AudioDevice::play_pcm_bytes(&pcm_bytes);
-        return Ok(());
-    }
-
-    bail!("failed to parse text message")
-}
 #[tauri::command]
 async fn play(input: String) -> TAResult<()> {
     WsClient::send_text(input)?;
@@ -75,8 +66,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|_app| {
             log::info!("setup started");
+            let ws_client = WsClient::init("ws://localhost:8000/play")?;
             AudioDevice::init()?;
-            WsClient::init("ws://localhost:8000/play")?;
+            AudioDevice::listen(&ws_client);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![split, tone, play])

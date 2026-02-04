@@ -2,7 +2,9 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use rodio::{Source};
 use std::{io::Cursor, sync::{OnceLock, mpsc::Sender}};
 use anyhow::Result;
+use crate::device::websocket::{WsClient, WsEvent};
 pub struct AudioDevice {}
+
 
 static AUDIO_SINK: OnceLock<Sender<AudioRequest>> = OnceLock::new();
 enum AudioRequest {
@@ -29,6 +31,20 @@ impl AudioDevice {
             }
         });
         Ok(())
+    }
+    pub fn listen(ws_client: &WsClient) {
+        let ws_client_clone = ws_client.clone();
+        tauri::async_runtime::spawn(async move {
+            let mut receiver = ws_client_clone.subscribe();
+            while let Ok(event) = receiver.recv().await {
+                match event {
+                    WsEvent::Binary(pcm_bytes) => {
+                        Self::play_pcm_bytes(&pcm_bytes);
+                    }
+                    _ => {}
+                }
+            }
+        });
     }
     pub fn play_pcm_bytes(pcm_bytes: &[u8]) {
         AUDIO_SINK.get().unwrap().send(AudioRequest::Play(pcm_bytes.to_vec())).expect("audio sink channel");
