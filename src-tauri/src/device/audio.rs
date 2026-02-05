@@ -1,18 +1,25 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use rodio::{Source};
+use tauri::{AppHandle, Emitter};
 use std::{io::Cursor, sync::{OnceLock, mpsc::Sender}};
 use anyhow::Result;
-use crate::device::websocket::{WsClient, WsEvent};
+use crate::{PlayResond, device::websocket::{WsClient, WsEvent}};
 pub struct AudioDevice {}
 
 
 static AUDIO_SINK: OnceLock<Sender<AudioRequest>> = OnceLock::new();
 enum AudioRequest {
-    Play(Vec<u8>)
+    Play{data: Vec<u8>, id: u32}
+}
+
+#[derive(serde::Serialize,Clone)]
+#[serde(rename_all = "camelCase")]
+struct AudioPlayed {
+    id: u32
 }
 
 impl AudioDevice {
-    pub fn init() -> Result<()> {
+    pub fn init(app: AppHandle) -> Result<()> {
         let (tx, rx) = std::sync::mpsc::channel::<AudioRequest>();
         AUDIO_SINK.set(tx).map_err(|_| anyhow::anyhow!("already initialized"))?;
         std::thread::spawn(move || {
@@ -20,12 +27,13 @@ impl AudioDevice {
                 let stream_handle =
                     rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
                 match request {
-                    AudioRequest::Play(pcm_bytes) => {
+                    AudioRequest::Play{data: pcm_bytes,id} => {
                         let sink = rodio::Sink::connect_new(&stream_handle.mixer());
                         let source = Self::pcm_bytes_to_source(&pcm_bytes);
                         sink.append(source);
                         // 等待播放完成
                         sink.sleep_until_end();
+                        app.emit("audio-played", AudioPlayed{id}).expect("emit audio played event");
                     }
                 }
             }
@@ -38,16 +46,16 @@ impl AudioDevice {
             let mut receiver = ws_client_clone.subscribe();
             while let Ok(event) = receiver.recv().await {
                 match event {
-                    WsEvent::Binary(pcm_bytes) => {
-                        Self::play_pcm_bytes(&pcm_bytes);
+                    WsEvent::Play(res) => {
+                        Self::play_pcm_bytes(&res);
                     }
                     _ => {}
                 }
             }
         });
     }
-    pub fn play_pcm_bytes(pcm_bytes: &[u8]) {
-        AUDIO_SINK.get().unwrap().send(AudioRequest::Play(pcm_bytes.to_vec())).expect("audio sink channel");
+    pub fn play_pcm_bytes(res: &PlayResond) {
+        AUDIO_SINK.get().unwrap().send(AudioRequest::Play{data: res.data.to_vec(), id: res.id}).expect("audio sink channel");
     }
     fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
         // 1. 将字节流包装为 Cursor（可读取的缓冲区）

@@ -3,12 +3,24 @@
 - [ ] close websocket gracely
 - [ ] start fastapi server automatically[configurable]
 - [x] rust error management
-- [ ] time rodio initialization and pcm data transfering process
 - [ ] compare http and websocket on play interface
 - [x] FIXME: websocket connection breakdown sometimes
     - because keepalive PING is not handled, FastAPI server will close connection due to timeout
+      
+- [ ] integrate sqlite to persist user information
   
 
 ## longterm target
 - [ ] integrate librime
 - [ ] shortcut (just like snippet in coding)
+  
+
+## frontend
+- [ ] playing indicator
+- [ ] typo autofix function
+- [ ] time every request(TTS/typo fix/)
+- [ ] show input speed 
+
+## integrate remote service
+- [ ] token counting
+- [ ] introduce MCP support

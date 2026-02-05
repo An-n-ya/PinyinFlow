@@ -1,24 +1,24 @@
 import List from '@mui/material/List';
-import { useEffect } from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MessageBubble } from './MesageBubble';
-import {css} from "@emotion/react"
+import { Container } from '@mui/material';
 
 interface ChatHistoryProps {
     messages: Message[];
     onPlay?: (id: number) => void;
     onStop?: (id: number) => void;
+    containerRef?: React.RefObject<HTMLDivElement | null>;
 }
-export function ChatHistory({messages, onPlay, onStop}: ChatHistoryProps) {
-    const buttomRef = useRef<HTMLDivElement>(null);    
+export function ChatHistory({messages, onPlay, onStop, containerRef}: ChatHistoryProps) {
+    const bottomRef = useRef<HTMLDivElement>(null);    
     useEffect(() => {
-        buttomRef.current?.scrollIntoView({behavior: "smooth"});
+        bottomRef.current?.scrollIntoView({behavior: "smooth"});
     }, [messages])
     
 
     return (
-        <div id="ChatHistoryContainer">
-            <List sx={{width: "800px"}}>
+        <Container id="ChatHistoryContainer" ref={containerRef}>
+            <List sx={{width: "min(800px, 90%)"}}>
                 {
                     messages.map((msg) => (
                         <MessageBubble message={msg}/>      
@@ -26,7 +26,7 @@ export function ChatHistory({messages, onPlay, onStop}: ChatHistoryProps) {
                 )
                 }
             </List>
-            <div ref={buttomRef}></div>
-        </div>
+            <div ref={bottomRef}></div>
+        </Container>
     )
 }

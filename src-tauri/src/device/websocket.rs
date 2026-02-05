@@ -2,6 +2,9 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 use anyhow::Result;
+use anyhow::ensure;
+use byteorder::ByteOrder;
+use byteorder::LittleEndian;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
 use reqwest::Client;
@@ -10,6 +13,9 @@ use reqwest_websocket::Upgrade;
 use reqwest_websocket::WebSocket;
 use tokio::sync::mpsc;
 use tokio::sync::broadcast;
+
+use crate::PlayRequest;
+use crate::PlayResond;
 
 static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 
@@ -21,6 +27,7 @@ pub enum WsEvent {
     Disconnected,
     Connected,
     Text(String),
+    Play(PlayResond),
     Binary(Vec<u8>),
     Close(u16, String),
 }
@@ -72,8 +79,9 @@ impl WsClient {
         self.event_tx.subscribe()
     }
     /// Send text message to the server
-    pub fn send_text(text: String) -> Result<()> {
-        WS_SENDER.get().unwrap().send(Message::Text(text.into()))?;
+    pub fn handle_play(req: PlayRequest) -> Result<()> {
+        let msg = serde_json::to_string(&req)?;
+        WS_SENDER.get().unwrap().send(Message::Text(msg.into()))?;
         Ok(())
     }
 }
@@ -114,7 +122,7 @@ async fn run_message_loop(
                                 broadcast_event(event_tx, WsEvent::Text(text));
                             }
                             Message::Binary(bytes) => {
-                                broadcast_event(event_tx, WsEvent::Binary(bytes.to_vec()));
+                                broadcast_event(event_tx, distribute_binary_data(&bytes));
                             }
                             Message::Close { code, reason } => {
                                 log::info!("server closed connection {} - {}", code, reason);
@@ -141,3 +149,25 @@ async fn run_message_loop(
     }
 }
 
+
+fn distribute_binary_data(data: &[u8]) -> WsEvent {
+    if let Ok(event) = unpack_pcm_data(data) {
+        return event;
+    }
+    log::warn!("Failed to unpack binary data");
+    WsEvent::Binary(data.to_vec())
+}
+
+// FIXME: 
+fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
+    ensure!(data.len() > 24);
+    let magic_bytes = &data[0..20];
+    let magic = String::from_utf8(magic_bytes.to_vec()).unwrap().trim_end_matches('\0').to_string();
+    ensure!(magic == "play");
+    
+    let id_bytes = &data[20..24];
+    let id = LittleEndian::read_u32(id_bytes) ;
+    
+    let pcm_data = data[24..].to_vec();
+    Ok(WsEvent::Play(PlayResond { data: pcm_data, id }))
+}

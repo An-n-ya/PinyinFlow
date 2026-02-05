@@ -1,15 +1,20 @@
 mod device;
 
-use reqwest_websocket::Message;
-
 use serde::{Deserialize, Serialize};
 use anyhow::{Result, bail};
 use anyhow_tauri::TAResult;
+use tauri::AppHandle;
 use crate::device::{audio::AudioDevice, websocket::WsClient };
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+struct PlayResond {
+    data: Vec<u8>,
+    id: u32
+}
 #[derive(Serialize, Debug)]
-struct PinyinRequest {
-    pinyin: String,
+struct PlayRequest {
+    input: String,
+    id: usize
 }
 #[derive(Deserialize, Serialize, Debug)]
 struct PinyinRespond {
@@ -27,8 +32,9 @@ async fn tone(input: &str) -> Result<PinyinRespond, String> {
     log::info!("tone {input}");
     let client = reqwest::Client::new();
 
-    let req_body = PinyinRequest {
-        pinyin: input.to_string(),
+    let req_body = PlayRequest {
+        input: input.to_string(),
+        id: 1
     };
 
     let res = client
@@ -48,8 +54,8 @@ async fn tone(input: &str) -> Result<PinyinRespond, String> {
 }
 
 #[tauri::command]
-async fn play(input: String) -> TAResult<()> {
-    WsClient::send_text(input)?;
+async fn play(id: usize, input: String) -> TAResult<()> {
+    WsClient::handle_play(PlayRequest{id, input})?;
     return Ok(());
 }
 
@@ -64,10 +70,10 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
-        .setup(|_app| {
+        .setup(|app| {
             log::info!("setup started");
             let ws_client = WsClient::init("ws://localhost:8000/play")?;
-            AudioDevice::init()?;
+            AudioDevice::init(app.handle().clone())?;
             AudioDevice::listen(&ws_client);
             Ok(())
         })
