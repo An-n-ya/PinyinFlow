@@ -79,6 +79,7 @@ function App() {
     // py_list.push(seg)
     //info(`[js] submit pinyin {pinyin}`)
     // play(tone.pinyin)
+    console.info(`handle message ${pinyin}`);
     const newMsg: Message = {
       id: Date.now() % 2147483647, // FIXME: switch to uuid
       text: pinyin,

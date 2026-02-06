@@ -1,0 +1,40 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "tauri": {
+        "description": "Format file generated from regex101 entry -- https://regex101.com/r/Ik3LAF/2",
+        "regex": {
+            "std": {
+                "pattern": "^(?<timestamp>\\[\\d{4}\\-\\d{2}\\-\\d{2}\\]\\[\\d{2}\\:\\d{2}\\:\\d{2}\\])\\[(?<level>.*?)\\]\\[(?<project>.*?)\\]\\[(?<target>.*?)\\](?<body>.*)$"
+            }
+        },
+        "timestamp-format": ["[%Y-%m-%d][%H:%M:%S]"],
+        "level-field": "level",
+        "value": {
+            "timestamp": {
+                "hidden": true
+            },
+            "project": {
+                "kind": "string",
+                "identifier": true
+            },
+            "target": {
+                "kind": "string",
+                "identifier": false
+            },
+            "level": {
+                "identifier": true
+            }
+        },
+        "level": {
+            "error": "ERROR",
+            "info": "INFO",
+            "debug": "DEBUG",
+            "trace": "TRACE"
+        },
+        "sample": [
+            {
+                "line": "[2026-02-05][15:17:30][INFO][flow][pinyin_lib] setup started"
+            }
+        ]
+    }
+}

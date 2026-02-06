@@ -1,5 +1,9 @@
 mod device;
 
+use std::time::Instant;
+
+use chrono::{DateTime, Local, Utc};
+use reqwest_websocket::Message;
 use serde::{Deserialize, Serialize};
 use anyhow::{Result, bail};
 use anyhow_tauri::TAResult;
@@ -59,6 +63,17 @@ async fn play(id: usize, input: String) -> TAResult<()> {
     return Ok(());
 }
 
+fn trim_webview_target(target: &str) -> &str {
+    if target.starts_with("webview:") {
+        return target.split("@").nth(0).unwrap();
+    }
+    target
+}
+
+fn log_time() -> String {
+    let now = Local::now();
+    format!("{}", now.format("[%Y-%m-%d][%H:%M:%S]"))
+}
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -66,7 +81,19 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::Folder { path: std::path::PathBuf::from("../logs"), file_name: Some("tauri_log.log".to_owned()) }
+                ))
                 .level(tauri_plugin_log::log::LevelFilter::Debug)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .format(|out, message, record| {
+                    out.finish(format_args!("{}[{}][flow][{}] {}",
+                        log_time(),
+                        record.level(),
+                        trim_webview_target(record.target()),
+                        message
+                    ));
+                })
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
