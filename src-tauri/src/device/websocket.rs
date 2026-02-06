@@ -14,8 +14,8 @@ use reqwest_websocket::WebSocket;
 use tokio::sync::mpsc;
 use tokio::sync::broadcast;
 
-use crate::PlayRequest;
-use crate::PlayResond;
+use crate::commands::PlayRequest;
+use crate::commands::PlayResond;
 
 static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 
@@ -154,11 +154,10 @@ fn distribute_binary_data(data: &[u8]) -> WsEvent {
     if let Ok(event) = unpack_pcm_data(data) {
         return event;
     }
-    log::warn!("Failed to unpack binary data");
+    log::error!("Failed to unpack binary data");
     WsEvent::Binary(data.to_vec())
 }
 
-// FIXME: 
 fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
     ensure!(data.len() > 24);
     let magic_bytes = &data[0..20];

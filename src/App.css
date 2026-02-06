@@ -12,7 +12,6 @@ html, body, #root, main {
 #ChatHistoryContainer{
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   overflow: auto;
   width: 100%;

@@ -26,7 +26,7 @@ export function InputArea({onSendMessage}: InputAreaProps) {
     return (
         <TextField
             hiddenLabel
-            id="outlined-multiline-static"
+            id="multiline-static"
             multiline
             rows={4}
             sx={{

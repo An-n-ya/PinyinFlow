@@ -5,32 +5,16 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Slide, useScrollTrigger } from '@mui/material';
 
 interface Props {
   children?: React.ReactElement;
   scrollTarget?: React.RefObject<HTMLDivElement | null>;
 }
 
-function HideOnScroll(props: Props) {
-  const { children, scrollTarget } = props;
-  const trigger = useScrollTrigger({
-    target: scrollTarget?.current ?? undefined,
-  });
-  console.log("trigger: ", trigger, "scrollTarget: ", scrollTarget?.current)
-
-  return (
-    <Slide appear={false} direction="down" in={!trigger}>
-      {children ?? <div />}
-    </Slide>
-  );
-}
-
 
 export default function AppHeader(props: Props) {
   return (
     <Box sx={{ flex: 'none' }}>
-      <HideOnScroll {...props}>
         <AppBar position='static'>
           <Toolbar >
             <IconButton
@@ -48,7 +32,6 @@ export default function AppHeader(props: Props) {
             <Button color="inherit">登录</Button>
           </Toolbar>
         </AppBar>
-      </HideOnScroll>
     </Box>
   );
 }

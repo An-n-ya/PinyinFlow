@@ -3,7 +3,7 @@ use rodio::{Source};
 use tauri::{AppHandle, Emitter};
 use std::{io::Cursor, sync::{OnceLock, mpsc::Sender}};
 use anyhow::Result;
-use crate::{PlayResond, device::websocket::{WsClient, WsEvent}};
+use crate::{commands::PlayResond, device::websocket::{WsClient, WsEvent}};
 pub struct AudioDevice {}
 
 
