@@ -20,6 +20,7 @@ class Message {
   static new_user(text: string): Message {
     const msg =  new Message();
     msg.text = text;
+    msg.isPlaying = true;
     return msg;
   }
   static new_chat_bot(text: string): Message {
@@ -54,8 +55,9 @@ export default function Chat() {
   }
   
   useEffect(() => {
-    const unlistenPromise = listen<{ id: number }>("audio-played", (event) => {
-      const finishedId = event.payload.id;
+    const unlistenPromise = listen<{AudioPlayed:{ id: number }}>("audio-played", (event) => {
+      const finishedId = event.payload.AudioPlayed.id;
+      console.info(`audio id${finishedId} played`);
   
       setMessages((prev) =>
         prev.map((m) =>

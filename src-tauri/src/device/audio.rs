@@ -3,7 +3,7 @@ use rodio::{Source};
 use tauri::{AppHandle, Emitter};
 use std::{io::Cursor, sync::{OnceLock, mpsc::Sender}};
 use anyhow::Result;
-use crate::{commands::PlayResond, device::websocket::{WsClient, WsEvent}};
+use crate::{commands::PlayResond, device::{frontend::{FClient, FEvent}, websocket::{WsClient, WsEvent}}};
 pub struct AudioDevice {}
 
 
@@ -33,7 +33,7 @@ impl AudioDevice {
                         sink.append(source);
                         // 等待播放完成
                         sink.sleep_until_end();
-                        app.emit("audio-played", AudioPlayed{id}).expect("emit audio played event");
+                        FClient::send_event(FEvent::AudioPlayed { id });
                     }
                 }
             }

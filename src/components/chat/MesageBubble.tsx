@@ -32,20 +32,24 @@ export function MessageBubble({message, onPlay, onStop}: MessageBubbleProps) {
         <BubbleListItem style={vars} key={message.id}>
         <Card key={message.id}>
             <CardContent sx={{ padding: "12px !important" }}>
-                <Typography variant="body2" component="div">
-                    {message.tc && (message.tc.tts) + "ms"}
-                </Typography>
                 <Typography variant="body1" component="div">
                     {message.text}
                 </Typography>
                     <Stack direction="row">
-                        <AccessTimeIcon fontSize="small" sx={{
-                            height: "1.5rem", color: 'text.secondary',
-                            marginRight: "0.5rem",
-                        }}/>
-                        <Typography sx={{ color: 'text.secondary'}}>
+                        {message.tc &&  (<>
+                                <AccessTimeIcon fontSize="small" sx={{
+                                    height: "1.5rem", color: 'text.secondary',
+                                    marginRight: "0.5rem",
+                                }}/>
+                                <Typography variant="body2" component="div" sx={{color: "text.secondary"}}>
+                                    {(message.tc.tts) + "ms"}
+                                </Typography>
+                            </>
+                            )
+                        }
+                        {/* <Typography sx={{ color: 'text.secondary'}}>
                             {message.date}
-                        </Typography>
+                        </Typography> */}
                         {message.isPlaying && (
                             <CircularProgress size={16} sx={{ ml: 1 }}/>
                         )}

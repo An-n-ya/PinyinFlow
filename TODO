@@ -18,7 +18,7 @@
 ## frontend
 - [x] playing indicator
 - [ ] typo autofix function
-- [ ] time every request(TTS/typo fix/)
+- [x] time every request(TTS/typo fix/)
 - [ ] show input speed 
 
 ## integrate remote service

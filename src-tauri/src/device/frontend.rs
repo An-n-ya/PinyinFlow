@@ -8,7 +8,8 @@ static EVENT_SENDER: OnceLock<mpsc::UnboundedSender<FEvent>> = OnceLock::new();
 
 #[derive(Clone, Debug, Serialize)]
 pub enum FEvent {
-    TTSFinished{timestamp: u64, id: u32}
+    TTSFinished{timestamp: u64, id: u32},
+    AudioPlayed{id: u32}
 }
 
 
@@ -16,6 +17,7 @@ impl FEvent {
     fn name(&self) -> String {
         match self {
             FEvent::TTSFinished { .. } => "tts-finished".to_owned(),
+            FEvent::AudioPlayed { .. } => "audio-played".to_owned(),
         }
     }
 }
@@ -31,12 +33,7 @@ impl FClient {
         tauri::async_runtime::spawn(async move {
             loop {
                 if let Some(event) = rx.recv().await {
-                    match event {
-                        FEvent::TTSFinished{..} => {
-                            log::info!("pass event to frontend {event:?}");
-                            app.emit(&event.name(), event).expect("emit {event:?} failed");
-                        }
-                    }          
+                    app.emit(&event.name(), event).expect("emit {event:?} failed");
                 }
             }
         });
