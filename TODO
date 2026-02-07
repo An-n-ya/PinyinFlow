@@ -16,7 +16,7 @@
   
 
 ## frontend
-- [ ] playing indicator
+- [x] playing indicator
 - [ ] typo autofix function
 - [ ] time every request(TTS/typo fix/)
 - [ ] show input speed 
@@ -24,3 +24,7 @@
 ## integrate remote service
 - [ ] token counting
 - [ ] introduce MCP support
+  
+
+## WebSocket
+- [ ] Refactor message payload id

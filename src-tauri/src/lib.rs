@@ -1,9 +1,11 @@
 mod device;
 mod commands;
 
-use chrono::{Local};
-use crate::{commands::{split, tone, play}, device::{audio::AudioDevice, websocket::WsClient }};
-
+use chrono::Local;
+use crate::commands::{play, split, tone};
+use crate::device::audio::AudioDevice;
+use crate::device::frontend::FClient;
+use crate::device::websocket::WsClient;
 
 fn trim_webview_target(target: &str) -> &str {
     if target.starts_with("webview:") {
@@ -42,6 +44,7 @@ pub fn run() {
         .setup(|app| {
             log::info!("setup started");
             let ws_client = WsClient::init("ws://localhost:8000/play")?;
+            FClient::init(app.handle().clone());
             AudioDevice::init(app.handle().clone())?;
             AudioDevice::listen(&ws_client);
             Ok(())

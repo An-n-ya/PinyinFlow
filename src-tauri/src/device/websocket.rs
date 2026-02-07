@@ -1,10 +1,14 @@
 use std::sync::OnceLock;
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Result;
+use anyhow::bail;
 use anyhow::ensure;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
+use chrono::Local;
+use chrono::Utc;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
 use reqwest::Client;
@@ -16,6 +20,8 @@ use tokio::sync::broadcast;
 
 use crate::commands::PlayRequest;
 use crate::commands::PlayResond;
+use crate::device::frontend::FClient;
+use crate::device::frontend::FEvent;
 
 static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 
@@ -161,12 +167,21 @@ fn distribute_binary_data(data: &[u8]) -> WsEvent {
 fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
     ensure!(data.len() > 24);
     let magic_bytes = &data[0..20];
-    let magic = String::from_utf8(magic_bytes.to_vec()).unwrap().trim_end_matches('\0').to_string();
-    ensure!(magic == "play");
+    let binding = String::from_utf8(magic_bytes.to_vec()).unwrap();
+    let magic = binding.trim_end_matches('\0');
+    match magic {
+        "play" => {
+
+            let id_bytes = &data[20..24];
+            let id = LittleEndian::read_u32(id_bytes) ;
+            FClient::send_event(FEvent::TTSFinished { timestamp: Utc::now().timestamp_millis() as u64, id: id });
+            
+            let pcm_data = data[24..].to_vec();
+            return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }))
+        },
+        _ => {
+            bail!("unsupported magic {magic}")
+        }
+    }
     
-    let id_bytes = &data[20..24];
-    let id = LittleEndian::read_u32(id_bytes) ;
-    
-    let pcm_data = data[24..].to_vec();
-    Ok(WsEvent::Play(PlayResond { data: pcm_data, id }))
 }

@@ -4,22 +4,6 @@ import React from "react";
 import { useEffect } from "react";
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
-const bull = (
-  <Box
-    component="span"
-    sx={{ display: 'inline-block', mx: '2px', transform: 'scale(0.8)' }}
-  >
-    •
-  </Box>
-);
-const card = (
-  <React.Fragment>
-    <CardActions>
-      <Button size="small">Learn More</Button>
-    </CardActions>
-  </React.Fragment>
-);
-
 
 const BubbleListItem = styled(ListItem)({
     borderRadius: 5,
@@ -48,6 +32,9 @@ export function MessageBubble({message, onPlay, onStop}: MessageBubbleProps) {
         <BubbleListItem style={vars} key={message.id}>
         <Card key={message.id}>
             <CardContent sx={{ padding: "12px !important" }}>
+                <Typography variant="body2" component="div">
+                    {message.tc && (message.tc.tts) + "ms"}
+                </Typography>
                 <Typography variant="body1" component="div">
                     {message.text}
                 </Typography>
@@ -57,7 +44,7 @@ export function MessageBubble({message, onPlay, onStop}: MessageBubbleProps) {
                             marginRight: "0.5rem",
                         }}/>
                         <Typography sx={{ color: 'text.secondary'}}>
-                            {message.timestamp}
+                            {message.date}
                         </Typography>
                         {message.isPlaying && (
                             <CircularProgress size={16} sx={{ ml: 1 }}/>

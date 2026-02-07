@@ -23,7 +23,6 @@ function forwardConsole(
   };
 }
 
-forwardConsole('log', trace);
 forwardConsole('debug', debug);
 forwardConsole('info', info);
 forwardConsole('warn', warn);
