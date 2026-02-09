@@ -28,6 +28,7 @@ static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 /// Delay in seconds before reconnecting
 const RECONNECT_DELAY_SECS: u64 = 2;
 
+// TODO: WsEvent::Binary should contains a struct that can unpack and distribute
 #[derive(Clone)]
 pub enum WsEvent {
     Disconnected,
