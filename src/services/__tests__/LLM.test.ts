@@ -3,14 +3,19 @@ import { LLMTextInput, OpenAIService, ReviseStrategy } from '../LLM';
 
 const MODELS = [
     {
-        apiKey: import.meta.env.VITE_LONGCAT_API_KEY,
+        apiKey: import.meta.env.VITE_LONGCAT_API_KEY, //~780ms
         model: 'LongCat-Flash-Chat',
         url: 'https://api.longcat.chat/openai/v1/',
     },
     {
-        apiKey: import.meta.env.VITE_SILICONFLOW_API_KEY,
+        apiKey: import.meta.env.VITE_SILICONFLOW_API_KEY, //~1800ms
         model: 'Qwen/Qwen3-8B',
         url: 'https://api.siliconflow.cn/v1/',
+    },
+    {
+        apiKey: "local", //~250ms
+        model: 'Qwen/Qwen3-1.7B-GGUF',
+        url: 'http://127.0.0.1:8033/v1/',
     },
 ]
 
@@ -30,8 +35,8 @@ describe('OpenAIService.revise - 集成测试', () => {
             model.url,
         );
 
-        const original = '请修改这段文字："这是一段有错别字的中文內容"';
-        const expect_text = '这是一段有错别字的中文内容';
+        const original = '请修改这段文字："一部小心选到了错误的方向"';
+        const expect_text = '一不小心选到了错误的方向';
         const input = new LLMTextInput(original);
 
         const result = await service.revise(input, new ReviseStrategy());
