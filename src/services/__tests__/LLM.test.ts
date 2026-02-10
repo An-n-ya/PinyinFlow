@@ -1,23 +1,36 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { LLMTextInput, OpenAIService, ReviseStrategy } from '../LLM';
 
+const MODELS = [
+    {
+        apiKey: import.meta.env.VITE_LONGCAT_API_KEY,
+        model: 'LongCat-Flash-Chat',
+        url: 'https://api.longcat.chat/openai/v1/',
+    },
+    {
+        apiKey: import.meta.env.VITE_SILICONFLOW_API_KEY,
+        model: 'Qwen/Qwen3-8B',
+        url: 'https://api.siliconflow.cn/v1/',
+    },
+]
+
 describe('OpenAIService.revise - 集成测试', () => {
-    vi.unmock('openai');
     it('连真实服务器并返回修订后的文本', async () => {
-        //const apiKey = process.env.LONGCAT_API_KEY;
-        const apiKey = import.meta.env.VITE_LONGCAT_API_KEY;
+        const model = MODELS[0];
+        
+        const apiKey = model.apiKey;
         if (!apiKey) {
-            console.warn('跳过集成测试：未设置 LONGCAT_API_KEY');
+            console.warn('跳过集成测试：未设置 VITE_SILICONFLOW_API_KEY');
             return;
         }
 
         const service = new OpenAIService(
             apiKey,
-            'LongCat-Flash-Chat',
-            'https://api.longcat.chat/openai'
+            model.model,
+            model.url,
         );
 
-        const original = '这是一段有错别字的中文內容';
+        const original = '请修改这段文字："这是一段有错别字的中文內容"';
         const expect_text = '这是一段有错别字的中文内容';
         const input = new LLMTextInput(original);
 

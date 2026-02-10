@@ -5,7 +5,8 @@ import {
     ChatCompletionMessageParam,
 } from 'openai/resources';
 import { BaseService } from './base';
-export type OpenAIModel = 'LongCat-Flash-Lite' | 'LongCat-Flash-Chat';
+//export type OpenAIModel = 'LongCat-Flash-Lite' | 'LongCat-Flash-Chat' | 'Qwen/Qwen3-8B';
+export type OpenAIModel = string;
 export type LLMJsonResponse = {
     name: string;
     description?: string;
@@ -18,7 +19,7 @@ export interface LLMTaskStrategy {
 }
 
 export class ReviseStrategy implements LLMTaskStrategy {
-    systemPrompt = '你是一个专业的校对工具，擅长纠正错别字';
+    systemPrompt = '你是一个专业的校对工具，擅长纠正错别字。你的回答只包含修正后的文本，不要有描述性文字，不要有任何多余的文字。';
     jsonSchema = {
         name: 'revision_tool',
         schema: {
@@ -86,6 +87,7 @@ export class OpenAIService extends BaseLLMService {
             baseURL: this.base_url,
             dangerouslyAllowBrowser: true,
         });
+        console.debug(client.apiKey, client.baseURL, this.model)
         const messages: ChatCompletionMessageParam[] = [];
         messages.push({ role: 'system', content: strategy.systemPrompt });
 
