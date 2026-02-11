@@ -31,12 +31,3 @@ export function ChatHistory({ messages, containerRef: _containerRef }: ChatHisto
         </Conversation>
     );
 }
-
-// <Container id="ChatHistoryContainer" ref={containerRef}>
-//     <List sx={{ width: 'min(800px, 90%)' }}>
-//         {messages.map(msg => (
-//             <MessageBubble message={msg} />
-//         ))}
-//     </List>
-//     <div ref={bottomRef}></div>
-// </Container>
