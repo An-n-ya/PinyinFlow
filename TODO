@@ -16,6 +16,7 @@
   
 
 ## frontend
+- [ ] substitude mui to shadcn-ui  
 - [x] playing indicator
 - [ ] typo autofix function
 - [x] time every request(TTS/typo fix/)

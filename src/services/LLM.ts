@@ -5,6 +5,7 @@ import {
     ChatCompletionMessageParam,
 } from 'openai/resources';
 import { BaseService } from './base';
+import { ReviseStrategy } from '../ai/LLMStrategy/ReviseStrategy';
 //export type OpenAIModel = 'LongCat-Flash-Lite' | 'LongCat-Flash-Chat' | 'Qwen/Qwen3-8B';
 export type OpenAIModel = string;
 export type LLMJsonResponse = {
@@ -12,38 +13,7 @@ export type LLMJsonResponse = {
     description?: string;
     schema: Record<string, unknown>;
 };
-export interface LLMTaskStrategy {
-    systemPrompt: string;
-    jsonSchema: LLMJsonResponse;
-    parseResponse(response: string): string;
-}
 
-export class ReviseStrategy implements LLMTaskStrategy {
-    systemPrompt = '你是一个专业的校对工具，擅长纠正错别字。你的回答只包含修正后的文本，不要有描述性文字，不要有任何多余的文字。';
-    jsonSchema = {
-        name: 'revision_tool',
-        schema: {
-            type: 'object',
-            properties: {
-                revisted: { type: 'string' },
-            },
-            required: ['revisted'],
-            additionalProperties: false,
-        },
-    };
-    parseResponse(response: string) {
-        try {
-            const obj = JSON.parse(response);
-            if (typeof obj.revisted === 'string') {
-                return obj.revisted;
-            }
-            throw new Error('Missing "revisted" field in response');
-        } catch (e) {
-            console.error('Failed to parse revise response:', e);
-            throw e;
-        }
-    }
-}
 export class LLMTextInput {
     prompt: string;
     constructor(prompt: string) {
@@ -63,6 +33,7 @@ export type LLMTextOutput = {
 export abstract class BaseLLMService extends BaseService {
     abstract revise(input: LLMTextInput, strategy: ReviseStrategy): Promise<LLMTextOutput>;
     abstract expand(input: LLMTextInput): Promise<LLMTextOutput>;
+    abstract complete(input: LLMTextInput): Promise<LLMTextOutput>;
 }
 
 export class OpenAIService extends BaseLLMService {
@@ -87,7 +58,6 @@ export class OpenAIService extends BaseLLMService {
             baseURL: this.base_url,
             dangerouslyAllowBrowser: true,
         });
-        console.debug(client.apiKey, client.baseURL, this.model)
         const messages: ChatCompletionMessageParam[] = [];
         messages.push({ role: 'system', content: strategy.systemPrompt });
 
@@ -98,9 +68,9 @@ export class OpenAIService extends BaseLLMService {
         const response: ChatCompletion = await client.chat.completions.create({
             messages,
             model: this.model,
-            temperature: 1,
+            temperature: 0.2,
             max_completion_tokens: 512,
-            top_p: 1,
+            top_p: 0.8,
             response_format: {
                 type: 'json_schema',
                 json_schema: strategy.jsonSchema,

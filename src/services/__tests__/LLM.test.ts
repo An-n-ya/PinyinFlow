@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LLMTextInput, OpenAIService, ReviseStrategy } from '../LLM';
+import { LLMTextInput, OpenAIService } from '../LLM';
+import { ReviseStrategy } from '../../ai/LLMStrategy/ReviseStrategy';
 
 const MODELS = [
     {
@@ -21,7 +22,7 @@ const MODELS = [
 
 describe('OpenAIService.revise - 集成测试', () => {
     it('连真实服务器并返回修订后的文本', async () => {
-        const model = MODELS[0];
+        const model = MODELS[1];
         
         const apiKey = model.apiKey;
         if (!apiKey) {
@@ -35,7 +36,7 @@ describe('OpenAIService.revise - 集成测试', () => {
             model.url,
         );
 
-        const original = '请修改这段文字："一部小心选到了错误的方向"';
+        const original = '一部小心选到了错误的方向';
         const expect_text = '一不小心选到了错误的方向';
         const input = new LLMTextInput(original);
 
