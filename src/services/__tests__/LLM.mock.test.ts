@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LLMTextInput, OpenAIService } from '../LLM';
 import { ReviseStrategy } from '../../ai/LLMStrategy/ReviseStrategy';
+import { LLMTextInput, OpenAIService } from '../LLM';
 // 先 mock 掉 openai SDK，避免真实网络请求
 const createMock = vi.fn();
 

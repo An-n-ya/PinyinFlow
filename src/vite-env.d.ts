@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-interface Message {
+interface MessageType {
     id: number;
     text: string;
-    sender: 'user' | 'ai';
+    sender: 'user' | 'speaker';
     timestamp: number;
     date: string;
     tc: TimeComsumption | null;

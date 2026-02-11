@@ -1,65 +1,31 @@
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { Card, CardContent, CircularProgress, ListItem, Stack, Typography } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import React, { useEffect } from 'react';
-
-const BubbleListItem = styled(ListItem)({
-    borderRadius: 5,
-    justifyContent: 'var(--justify-content)',
-});
-
-const aiVars = {
-    '--justify-content': 'flex-start',
-} as React.CSSProperties;
-const userVars = {
-    '--justify-content': 'flex-end',
-} as React.CSSProperties;
+import AudioVisualizer from '@/lib/AudioVisualizer';
+import React, { Fragment, useEffect } from 'react';
+import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
 
 interface MessageBubbleProps {
-    message: Message;
+    message: MessageType;
     onPlay?: (id: number) => void;
     onStop?: (id: number) => void;
 }
 export function MessageBubble({ message, onPlay, onStop }: MessageBubbleProps) {
-    const [vars, setVars] = React.useState<React.CSSProperties>(userVars);
+    const [from, setFrom] = React.useState<'user' | 'assistant'>('user');
     useEffect(() => {
-        setVars(message.sender === 'user' ? userVars : aiVars);
+        setFrom(message.sender === 'user' ? 'user' : 'assistant');
     }, [message]);
 
     return (
-        <BubbleListItem style={vars} key={message.id}>
-            <Card key={message.id}>
-                <CardContent sx={{ padding: '12px !important' }}>
-                    <Typography variant="body1" component="div">
-                        {message.text}
-                    </Typography>
-                    <Stack direction="row">
-                        {message.tc && (
-                            <>
-                                <AccessTimeIcon
-                                    fontSize="small"
-                                    sx={{
-                                        height: '1.5rem',
-                                        color: 'text.secondary',
-                                        marginRight: '0.5rem',
-                                    }}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    component="div"
-                                    sx={{ color: 'text.secondary' }}
-                                >
-                                    {message.tc.tts + 'ms'}
-                                </Typography>
-                            </>
-                        )}
-                        {/* <Typography sx={{ color: 'text.secondary'}}>
-                            {message.date}
-                        </Typography> */}
-                        {message.isPlaying && <CircularProgress size={16} sx={{ ml: 1 }} />}
-                    </Stack>
-                </CardContent>
-            </Card>
-        </BubbleListItem>
+        <Fragment key={message.id}>
+            <Message from={from}>
+                <MessageContent className="flex-row">
+                    {message.isPlaying && <AudioVisualizer />}
+                    <MessageResponse>{message.text}</MessageResponse>
+                </MessageContent>
+                {/* <MessageActions>
+                    <MessageAction label="Copy">
+                        <CopyIcon/>
+                    </MessageAction>
+                </MessageActions> */}
+            </Message>
+        </Fragment>
     );
 }

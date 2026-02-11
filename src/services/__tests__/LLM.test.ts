@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LLMTextInput, OpenAIService } from '../LLM';
 import { ReviseStrategy } from '../../ai/LLMStrategy/ReviseStrategy';
+import { LLMTextInput, OpenAIService } from '../LLM';
 
 const MODELS = [
     {
@@ -14,27 +14,23 @@ const MODELS = [
         url: 'https://api.siliconflow.cn/v1/',
     },
     {
-        apiKey: "local", //~250ms
+        apiKey: 'local', //~250ms
         model: 'Qwen/Qwen3-1.7B-GGUF',
         url: 'http://127.0.0.1:8033/v1/',
     },
-]
+];
 
 describe('OpenAIService.revise - 集成测试', () => {
     it('连真实服务器并返回修订后的文本', async () => {
         const model = MODELS[1];
-        
+
         const apiKey = model.apiKey;
         if (!apiKey) {
             console.warn('跳过集成测试：未设置 VITE_SILICONFLOW_API_KEY');
             return;
         }
 
-        const service = new OpenAIService(
-            apiKey,
-            model.model,
-            model.url,
-        );
+        const service = new OpenAIService(apiKey, model.model, model.url);
 
         const original = '一部小心选到了错误的方向';
         const expect_text = '一不小心选到了错误的方向';

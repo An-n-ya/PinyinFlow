@@ -1,4 +1,4 @@
-import { LLMJsonResponse } from "../../services/LLM";
+import { LLMJsonResponse } from '../../services/LLM';
 
 export interface LLMTaskStrategy {
     systemPrompt: string;

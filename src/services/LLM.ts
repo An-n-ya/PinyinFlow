@@ -4,8 +4,8 @@ import {
     ChatCompletionContentPart,
     ChatCompletionMessageParam,
 } from 'openai/resources';
-import { BaseService } from './base';
 import { ReviseStrategy } from '../ai/LLMStrategy/ReviseStrategy';
+import { BaseService } from './base';
 //export type OpenAIModel = 'LongCat-Flash-Lite' | 'LongCat-Flash-Chat' | 'Qwen/Qwen3-8B';
 export type OpenAIModel = string;
 export type LLMJsonResponse = {

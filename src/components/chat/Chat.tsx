@@ -1,11 +1,10 @@
-import Stack from '@mui/material/Stack';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
 import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
-class Message {
+class MessageType {
     id: number = Date.now() % 2147483647; // FIXME: switch to uuid
     text: string = '';
     sender: 'user' | 'ai' = 'user';
@@ -13,30 +12,30 @@ class Message {
     timestamp: number = Date.now();
     tc: TimeComsumption | null = null;
     isPlaying?: boolean = false;
-    constructor(config?: Partial<Message>) {
+    constructor(config?: Partial<MessageType>) {
         // 使用 Object.assign 将配置合并到实例中
         Object.assign(this, config);
     }
-    static new_user(text: string): Message {
-        const msg = new Message();
+    static new_user(text: string): MessageType {
+        const msg = new MessageType();
         msg.text = text;
         msg.isPlaying = true;
         return msg;
     }
-    static new_chat_bot(text: string): Message {
-        const msg = Message.new_user(text);
+    static new_chat_bot(text: string): MessageType {
+        const msg = MessageType.new_user(text);
         msg.sender = 'ai';
         return msg;
     }
-    add_tts_timestamp(timestamp: number): Message {
+    add_tts_timestamp(timestamp: number): MessageType {
         this.tc = { tts: timestamp - this.timestamp };
-        return new Message({
+        return new MessageType({
             ...this,
             tc: this.tc,
         });
     }
-    play_finished(): Message {
-        return new Message({
+    play_finished(): MessageType {
+        return new MessageType({
             ...this,
             isPlaying: false,
         });
@@ -44,7 +43,7 @@ class Message {
 }
 
 export default function Chat() {
-    const [messages, setMessages] = useState<Message[]>(TEST_DATA);
+    const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
     async function play(id: number, input: string) {
         try {
             await invoke('play', { id, input });
@@ -80,29 +79,19 @@ export default function Chat() {
 
     async function submit_pinyin(pinyin: string) {
         console.info(`handle message ${pinyin}`);
-        const newMsg = Message.new_user(pinyin);
+        const newMsg = MessageType.new_user(pinyin);
         setMessages(prev => [...prev, newMsg]);
         play(newMsg.id, pinyin);
     }
     return (
-        <Stack
-            direction="row"
-            spacing={2}
-            sx={{
-                justifyContent: 'center',
-                overflow: 'hidden',
-                height: '100vh',
-            }}
-        >
-            <Stack sx={{ height: '100%', width: '100%', alignItems: 'center' }}>
-                <ChatHistory messages={messages}></ChatHistory>
-                <InputArea onSendMessage={submit_pinyin} />
-            </Stack>
-        </Stack>
+        <div className="flex flex-col h-screen">
+            <ChatHistory messages={messages}></ChatHistory>
+            <InputArea onSendMessage={submit_pinyin} />
+        </div>
     );
 }
 
-const TEST_DATA: Message[] = [
+const TEST_DATA: MessageType[] = [
     {
         id: 1,
         text: '你好，这是一个测试',

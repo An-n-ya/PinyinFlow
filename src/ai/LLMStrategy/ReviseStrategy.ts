@@ -1,4 +1,4 @@
-import { LLMTaskStrategy } from "./base";
+import { LLMTaskStrategy } from './base';
 
 export class ReviseStrategy implements LLMTaskStrategy {
     systemPrompt = `

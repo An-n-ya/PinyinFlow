@@ -1,4 +1,11 @@
-import { TextField } from '@mui/material';
+import {
+    PromptInput,
+    PromptInputButton,
+    PromptInputFooter,
+    PromptInputSubmit,
+    PromptInputTextarea,
+} from '@/components/ai-elements/prompt-input';
+import { CuboidIcon } from 'lucide-react';
 import { useState } from 'react';
 
 interface InputAreaProps {
@@ -22,26 +29,27 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         }
     };
     return (
-        <TextField
-            hiddenLabel
-            id="multiline-static"
-            multiline
-            rows={4}
-            sx={{
-                margin: '10px',
-                width: 'min(800px, 90%)',
-                borderRadius: '20px',
-                boxShadow:
-                    'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.02) 0px 2px 4px 0px, rgba(0, 0, 0, 0.04) 0px 4px 16px 0px, rgba(0, 0, 0, 0.08) 0px 8px 32px 0px',
-                '& .MuiInputBase-root': {
-                    borderRadius: '20px',
-                },
-            }}
-            onChange={e => {
-                setInput(e.target.value);
-            }}
-            onKeyDown={handleKeyDown}
-            value={input}
-        />
+        <>
+            <PromptInput onSubmit={handleSend} className="mt-4 w-full max-w-2xl mx-auto relative">
+                <PromptInputTextarea
+                    value={input}
+                    placeholder=""
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pr-12 h-40"
+                />
+                <PromptInputFooter>
+                    <PromptInputButton>
+                        <CuboidIcon />
+                        <span>模型</span>
+                    </PromptInputButton>
+                    <PromptInputSubmit
+                        status="ready"
+                        disabled={!input.trim()}
+                        className="absolute bottom-1 right-1"
+                    />
+                </PromptInputFooter>
+            </PromptInput>
+        </>
     );
 }
