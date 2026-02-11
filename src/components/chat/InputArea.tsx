@@ -5,6 +5,7 @@ import {
     PromptInputSubmit,
     PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CuboidIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -22,32 +23,31 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         setInput('');
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.code === 'Space') {
-            e.preventDefault();
-            handleSend();
-        }
-    };
     return (
         <>
             <PromptInput onSubmit={handleSend} className="mt-4 w-full max-w-2xl mx-auto relative">
                 <PromptInputTextarea
                     value={input}
-                    placeholder=""
+                    placeholder="请输入拼音..."
                     onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
                     className="pr-12 h-40"
                 />
                 <PromptInputFooter>
-                    <PromptInputButton>
+                    <PromptInputButton tooltip="选择模型">
                         <CuboidIcon />
                         <span>模型</span>
                     </PromptInputButton>
-                    <PromptInputSubmit
-                        status="ready"
-                        disabled={!input.trim()}
-                        className="absolute bottom-1 right-1"
-                    />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <PromptInputSubmit
+                                status="ready"
+                                disabled={!input.trim()}
+                                className="absolute bottom-1 right-1"
+                                aria-label="发送"
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>发送</TooltipContent>
+                    </Tooltip>
                 </PromptInputFooter>
             </PromptInput>
         </>
