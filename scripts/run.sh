@@ -3,15 +3,15 @@
 server_path="/home/annya/playground/nlp/phonix"
 virtual_python=".venv/bin/python"
 
-while getopts "h:stv" opt; do
+while getopts "h:srv" opt; do
     case $opt in
     h) # 帮助选项
         echo "usage：$0 [-h] [-s] [-t]"
         echo "  -s    run fastapi server"
-        echo "  -t    run tauri app"
+        echo "  -r    run tauri app"
         exit 0
         ;;
-    t)
+    r)
         WEBKIT_DISABLE_DMABUF_RENDERER=1 pnpm tauri dev
         ;;
     s)

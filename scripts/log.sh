@@ -7,17 +7,16 @@ tauri_log_json="scripts/tauri-log.json"
 phonix_log="logs/phonix.log"
 phonix_log_json="scripts/phonix-log.json"
 
-while getopts "h:tic" opt; do
+while getopts "h:lic" opt; do
     case $opt in
     h) # 帮助选项
         echo "usage：$0 [-h] [-i]"
         echo "  -i    install lnav format"
-        echo "  -t    open tauri log"
-        echo "  -f    open fastapi log"
+        echo "  -l    open log"
         echo "  -c    clear log"
         exit 0
         ;;
-    t)
+    l)
         lnav $tauri_log $phonix_log
         ;;
     c)
