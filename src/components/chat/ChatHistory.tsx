@@ -11,15 +11,9 @@ interface ChatHistoryProps {
     messages: MessageType[];
     onPlay?: (id: number) => void;
     onStop?: (id: number) => void;
-    containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function ChatHistory({ messages, containerRef: _containerRef }: ChatHistoryProps) {
-    const bottomRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
+export function ChatHistory({ messages }: ChatHistoryProps) {
     return (
         <Conversation className="size-full">
             <ConversationContent>
