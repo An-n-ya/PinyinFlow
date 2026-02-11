@@ -7,7 +7,7 @@ interface MessageBubbleProps {
     onPlay?: (id: number) => void;
     onStop?: (id: number) => void;
 }
-export function MessageBubble({ message, onPlay, onStop }: MessageBubbleProps) {
+export function MessageBubble({ message, onPlay: _onPlay, onStop: _onStop }: MessageBubbleProps) {
     const [from, setFrom] = React.useState<'user' | 'assistant'>('user');
     useEffect(() => {
         setFrom(message.sender === 'user' ? 'user' : 'assistant');
