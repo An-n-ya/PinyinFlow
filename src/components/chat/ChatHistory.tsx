@@ -14,7 +14,7 @@ interface ChatHistoryProps {
     containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function ChatHistory({ messages, containerRef }: ChatHistoryProps) {
+export function ChatHistory({ messages, containerRef: _containerRef }: ChatHistoryProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

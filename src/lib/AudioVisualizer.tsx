@@ -1,11 +1,4 @@
 const AudioVisualizer = () => {
-    const bars = [
-        { id: 1, animDuration: '0.6s' },
-        { id: 2, animDuration: '0.8s' },
-        { id: 3, animDuration: '0.5s' },
-        { id: 4, animDuration: '0.7s' },
-    ];
-
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg
