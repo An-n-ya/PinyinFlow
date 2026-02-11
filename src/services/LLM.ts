@@ -1,12 +1,7 @@
-import OpenAI from 'openai';
-import {
-    ChatCompletion,
-    ChatCompletionContentPart,
-    ChatCompletionMessageParam,
-} from 'openai/resources';
+import { invoke } from '@tauri-apps/api/core';
 import { ReviseStrategy } from '../ai/LLMStrategy/ReviseStrategy';
 import { BaseService } from './base';
-//export type OpenAIModel = 'LongCat-Flash-Lite' | 'LongCat-Flash-Chat' | 'Qwen/Qwen3-8B';
+
 export type OpenAIModel = string;
 export type LLMJsonResponse = {
     name: string;
@@ -57,44 +52,29 @@ export class OpenAIService extends BaseLLMService {
     }
 
     async revise(input: LLMTextInput, strategy: ReviseStrategy): Promise<LLMTextOutput> {
-        const client = new OpenAI({
-            apiKey: this.openaiApiKey.trim(),
-            baseURL: this.base_url,
-            dangerouslyAllowBrowser: true,
-        });
-        const messages: ChatCompletionMessageParam[] = [];
-        messages.push({ role: 'system', content: strategy.systemPrompt });
+        try {
+            const result = await invoke<string>('revise', {
+                apiKey: this.openaiApiKey,
+                baseUrl: this.base_url,
+                model: this.model,
+                prompt: input.prompt,
+                systemPrompt: strategy.systemPrompt,
+                jsonSchema: strategy.jsonSchema,
+            });
 
-        const userParts: ChatCompletionContentPart[] = [];
-        userParts.push({ type: 'text', text: input.prompt });
-        messages.push({ role: 'user', content: userParts });
+            if (!result) {
+                throw new Error('Content is empty');
+            }
 
-        const response: ChatCompletion = await client.chat.completions.create({
-            messages,
-            model: this.model,
-            temperature: 0.2,
-            max_completion_tokens: 512,
-            top_p: 0.8,
-            response_format: {
-                type: 'json_schema',
-                json_schema: strategy.jsonSchema,
-            },
-        });
-        if (!response.choices || response.choices.length == 0) {
-            throw new Error(`No response from ${this.model}`);
+            const text = strategy.parseResponse(result);
+
+            const text_response: LLMTextOutput = {
+                text,
+            };
+            return text_response;
+        } catch (error) {
+            console.error('LLM request failed:', error);
+            throw error;
         }
-
-        const result = response.choices[0].message.content;
-        console.log(result);
-        if (!result) {
-            throw new Error('Content is empty');
-        }
-
-        const text = strategy.parseResponse(result);
-
-        const text_response: LLMTextOutput = {
-            text,
-        };
-        return text_response;
     }
 }

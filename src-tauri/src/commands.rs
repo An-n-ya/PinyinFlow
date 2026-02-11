@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use anyhow_tauri::TAResult;
+use serde_json::Value;
 
 use crate::device::websocket::WsClient;
 
@@ -55,4 +56,18 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 pub async fn play(id: usize, input: String) -> TAResult<()> {
     WsClient::handle_play(PlayRequest{id, input})?;
     return Ok(());
+}
+
+#[tauri::command]
+pub async fn revise(
+    api_key: String,
+    base_url: String,
+    model: String,
+    prompt: String,
+    system_prompt: String,
+    json_schema: Value,
+) -> TAResult<String> {
+    log::info!("revise prompt: {}", prompt);
+    let result = crate::llm::revise(&api_key, &base_url, &model, &prompt, &system_prompt, json_schema).await?;
+    Ok(result)
 }

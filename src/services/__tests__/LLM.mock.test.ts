@@ -1,38 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ReviseStrategy } from '../../ai/LLMStrategy/ReviseStrategy';
 import { LLMTextInput, OpenAIService } from '../LLM';
-// 先 mock 掉 openai SDK，避免真实网络请求
-const createMock = vi.fn();
+
+// Mock @tauri-apps/api/core
+vi.mock('@tauri-apps/api/core', () => ({
+    invoke: vi.fn(),
+}));
+
+import { invoke } from '@tauri-apps/api/core';
 
 describe('OpenAIService.revise', () => {
-    vi.mock('openai', () => {
-        class OpenAI {
-            chat = {
-                completions: {
-                    create: createMock,
-                },
-            };
-
-            constructor(_options: any) {}
-        }
-
-        return {
-            __esModule: true,
-            default: OpenAI,
-        };
-    });
     it('应当返回模型响应中的修订文本', async () => {
-        // 准备 mock 返回值
-        createMock.mockResolvedValue({
-            choices: [
-                {
-                    message: {
-                        // revise 中会把这个当成字符串传给 get_content
-                        content: JSON.stringify({ revisted: '修正后的文本' }),
-                    },
-                },
-            ],
-        } as any);
+        // Prepare mock return value
+        (invoke as any).mockResolvedValue(JSON.stringify({ revisted: '修正后的文本' }));
 
         const service = new OpenAIService(
             'fake-api-key',
@@ -44,6 +24,13 @@ describe('OpenAIService.revise', () => {
         const result = await service.revise(input, new ReviseStrategy());
 
         expect(result.text).toBe('修正后的文本');
-        expect(createMock).toHaveBeenCalledTimes(1);
+        expect(invoke).toHaveBeenCalledWith('revise', {
+            apiKey: 'fake-api-key',
+            baseUrl: 'https://api.longcat.chat/openai',
+            model: 'LongCat-Flash-Chat',
+            prompt: '原始文本',
+            systemPrompt: expect.any(String),
+            jsonSchema: expect.any(Object),
+        });
     });
 });

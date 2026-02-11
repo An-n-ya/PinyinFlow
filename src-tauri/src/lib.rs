@@ -1,8 +1,9 @@
 mod device;
 mod commands;
+mod llm;
 
 use chrono::Local;
-use crate::commands::{play, split, tone};
+use crate::commands::{play, split, tone, revise};
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
 use crate::device::websocket::WsClient;
@@ -49,7 +50,7 @@ pub fn run() {
             AudioDevice::listen(&ws_client);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![split, tone, play])
+        .invoke_handler(tauri::generate_handler![split, tone, play, revise])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
