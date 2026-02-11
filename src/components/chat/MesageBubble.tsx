@@ -1,5 +1,5 @@
 import AudioVisualizer from '@/lib/AudioVisualizer';
-import React, { Fragment, useEffect } from 'react';
+import React, { memo } from 'react';
 import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
 
 interface MessageBubbleProps {
@@ -7,25 +7,27 @@ interface MessageBubbleProps {
     onPlay?: (id: number) => void;
     onStop?: (id: number) => void;
 }
-export function MessageBubble({ message, onPlay: _onPlay, onStop: _onStop }: MessageBubbleProps) {
-    const [from, setFrom] = React.useState<'user' | 'assistant'>('user');
-    useEffect(() => {
-        setFrom(message.sender === 'user' ? 'user' : 'assistant');
-    }, [message]);
+
+export const MessageBubble = memo(function MessageBubble({
+    message,
+    onPlay,
+    onStop,
+}: MessageBubbleProps) {
+    const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
-        <Fragment key={message.id}>
-            <Message from={from}>
-                <MessageContent className="flex-row">
-                    {message.isPlaying && <AudioVisualizer />}
-                    <MessageResponse>{message.text}</MessageResponse>
-                </MessageContent>
-                {/* <MessageActions>
-                    <MessageAction label="Copy">
-                        <CopyIcon/>
-                    </MessageAction>
-                </MessageActions> */}
-            </Message>
-        </Fragment>
+        <Message from={from}>
+            <MessageContent className="flex-row">
+                {message.isPlaying && <AudioVisualizer />}
+                <MessageResponse>{message.text}</MessageResponse>
+            </MessageContent>
+            {/* <MessageActions>
+                <MessageAction label="Copy">
+                    <CopyIcon/>
+                </MessageAction>
+            </MessageActions> */}
+        </Message>
     );
-}
+});
+
+MessageBubble.displayName = 'MessageBubble';

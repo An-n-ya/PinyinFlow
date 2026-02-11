@@ -24,7 +24,7 @@ export function ChatHistory({ messages, containerRef: _containerRef }: ChatHisto
         <Conversation className="size-full">
             <ConversationContent>
                 {messages.map(msg => (
-                    <MessageBubble message={msg} />
+                    <MessageBubble key={msg.id} message={msg} />
                 ))}
             </ConversationContent>
             <ConversationScrollButton />
