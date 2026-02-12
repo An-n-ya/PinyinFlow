@@ -1,18 +1,18 @@
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use anyhow_tauri::TAResult;
+use serde::{Deserialize, Serialize};
 
 use crate::device::websocket::WsClient;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PlayResond {
     pub data: Vec<u8>,
-    pub id: u32
+    pub id: u32,
 }
 #[derive(Serialize, Debug)]
 pub struct PlayRequest {
     input: String,
-    id: usize
+    id: usize,
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PinyinRespond {
@@ -32,7 +32,7 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 
     let req_body = PlayRequest {
         input: input.to_string(),
-        id: 1
+        id: 1,
     };
 
     let res = client
@@ -53,6 +53,6 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 
 #[tauri::command]
 pub async fn play(id: usize, input: String) -> TAResult<()> {
-    WsClient::handle_play(PlayRequest{id, input})?;
+    WsClient::handle_play(PlayRequest { id, input })?;
     return Ok(());
 }

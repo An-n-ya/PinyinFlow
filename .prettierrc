@@ -8,5 +8,13 @@
   "arrowParens": "avoid",
   "endOfLine": "lf",
   "parser": "typescript",
-  "plugins": ["prettier-plugin-organize-imports"]
+  "overrides": [
+    {
+      "files": "*.css",
+      "options": {
+        "parser": "scss"
+      }
+    }
+  ],
+  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
 }

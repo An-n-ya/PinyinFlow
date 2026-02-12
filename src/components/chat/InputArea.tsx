@@ -25,12 +25,12 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
 
     return (
         <>
-            <PromptInput onSubmit={handleSend} className="mt-4 w-full max-w-2xl mx-auto relative">
+            <PromptInput onSubmit={handleSend} className="relative mx-auto mt-4 w-full max-w-2xl">
                 <PromptInputTextarea
                     value={input}
                     placeholder="请输入拼音..."
                     onChange={e => setInput(e.target.value)}
-                    className="pr-12 h-40"
+                    className="h-40 pr-12"
                 />
                 <PromptInputFooter>
                     <PromptInputButton tooltip="选择模型">
@@ -42,7 +42,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                             <PromptInputSubmit
                                 status="ready"
                                 disabled={!input.trim()}
-                                className="absolute bottom-1 right-1"
+                                className="absolute right-1 bottom-1"
                                 aria-label="发送"
                             />
                         </TooltipTrigger>

@@ -1,11 +1,11 @@
-mod device;
 mod commands;
+mod device;
 
-use chrono::Local;
 use crate::commands::{play, split, tone};
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
 use crate::device::websocket::WsClient;
+use chrono::Local;
 
 fn trim_webview_target(target: &str) -> &str {
     if target.starts_with("webview:") {
@@ -19,19 +19,22 @@ fn log_time() -> String {
     format!("{}", now.format("[%Y-%m-%d][%H:%M:%S]"))
 }
 
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::Folder { path: std::path::PathBuf::from("../logs"), file_name: Some("tauri_log.log".to_owned()) }
+                    tauri_plugin_log::TargetKind::Folder {
+                        path: std::path::PathBuf::from("../logs"),
+                        file_name: Some("tauri_log.log".to_owned()),
+                    },
                 ))
                 .level(tauri_plugin_log::log::LevelFilter::Debug)
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .format(|out, message, record| {
-                    out.finish(format_args!("{}[{}][flow][{}] {}",
+                    out.finish(format_args!(
+                        "{}[{}][flow][{}] {}",
                         log_time(),
                         record.level(),
                         trim_webview_target(record.target()),

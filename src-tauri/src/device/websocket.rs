@@ -2,9 +2,9 @@ use std::sync::OnceLock;
 use std::time::Duration;
 use std::time::Instant;
 
-use anyhow::Result;
 use anyhow::bail;
 use anyhow::ensure;
+use anyhow::Result;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use chrono::Local;
@@ -15,8 +15,8 @@ use reqwest::Client;
 use reqwest_websocket::Message;
 use reqwest_websocket::Upgrade;
 use reqwest_websocket::WebSocket;
-use tokio::sync::mpsc;
 use tokio::sync::broadcast;
+use tokio::sync::mpsc;
 
 use crate::commands::PlayRequest;
 use crate::commands::PlayResond;
@@ -38,7 +38,6 @@ pub enum WsEvent {
     Binary(Vec<u8>),
     Close(u16, String),
 }
-
 
 #[derive(Clone)]
 pub struct WsClient {
@@ -72,7 +71,10 @@ impl WsClient {
 
                 if disconnected {
                     broadcast_event(&event_tx_inner, WsEvent::Disconnected);
-                    log::warn!("WebSocket disconnected, reconnecting in {}s...", RECONNECT_DELAY_SECS);
+                    log::warn!(
+                        "WebSocket disconnected, reconnecting in {}s...",
+                        RECONNECT_DELAY_SECS
+                    );
                     tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
                 }
             }
@@ -156,7 +158,6 @@ async fn run_message_loop(
     }
 }
 
-
 fn distribute_binary_data(data: &[u8]) -> WsEvent {
     if let Ok(event) = unpack_pcm_data(data) {
         return event;
@@ -172,17 +173,18 @@ fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
     let magic = binding.trim_end_matches('\0');
     match magic {
         "play" => {
-
             let id_bytes = &data[20..24];
-            let id = LittleEndian::read_u32(id_bytes) ;
-            FClient::send_event(FEvent::TTSFinished { timestamp: Utc::now().timestamp_millis() as u64, id: id });
-            
+            let id = LittleEndian::read_u32(id_bytes);
+            FClient::send_event(FEvent::TTSFinished {
+                timestamp: Utc::now().timestamp_millis() as u64,
+                id: id,
+            });
+
             let pcm_data = data[24..].to_vec();
-            return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }))
-        },
+            return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }));
+        }
         _ => {
             bail!("unsupported magic {magic}")
         }
     }
-    
 }
