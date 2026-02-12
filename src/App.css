@@ -6,22 +6,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.container {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-}
-
-#ChatHistoryContainer{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: auto;
-  width: 100%;
-  max-width: 100%;
-  flex-grow: 1;
-}
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

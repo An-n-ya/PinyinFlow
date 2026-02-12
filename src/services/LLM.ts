@@ -48,7 +48,11 @@ export class OpenAIService extends BaseLLMService {
         this.base_url = url ?? 'https://api.longcat.chat/openai';
     }
 
-    expand(input: LLMTextInput): Promise<LLMTextOutput> {
+    expand(_input: LLMTextInput): Promise<LLMTextOutput> {
+        throw new Error('Method not implemented.');
+    }
+
+    complete(_input: LLMTextInput): Promise<LLMTextOutput> {
         throw new Error('Method not implemented.');
     }
 

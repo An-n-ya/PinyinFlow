@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\""
   },
   "dependencies": {
+    "@fontsource/roboto": "^5.2.9",
     "@rive-app/react-webgl2": "^4.26.2",
     "@streamdown/cjk": "^1.0.2",
     "@streamdown/code": "^1.0.2",

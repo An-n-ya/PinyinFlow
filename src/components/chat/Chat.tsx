@@ -92,18 +92,18 @@ export default function Chat() {
 }
 
 const TEST_DATA: MessageType[] = [
-    {
-        id: '1',
+    new MessageType({
+        id: 1,
         text: '你好，这是一个测试',
         sender: 'user',
         date: '10:00',
         isPlaying: false,
-    },
-    {
-        id: '2',
+    }),
+    new MessageType({
+        id: 2,
         text: '你好',
         sender: 'ai',
         date: '10:01',
         isPlaying: false,
-    },
+    }),
 ];
