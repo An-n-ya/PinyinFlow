@@ -5,7 +5,7 @@ import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
 class MessageType {
-    id: string = crypto.randomUUID(); // FIXME: switch to uuid
+    id: string = crypto.randomUUID();
     text: string = '';
     sender: 'user' | 'ai' = 'user';
     date: string = new Date().toLocaleDateString([], { hour: '2-digit', minute: '2-digit' });
