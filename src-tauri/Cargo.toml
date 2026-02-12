@@ -37,6 +37,7 @@ anyhow-tauri = "1.0.0"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.31"
 chrono = "0.4.43"
+uuid = { version = "1", features = ["v4", "serde"] }
 
 
 [dev-dependencies]

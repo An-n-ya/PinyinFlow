@@ -9,13 +9,13 @@ pub struct AudioDevice {}
 
 static AUDIO_SINK: OnceLock<Sender<AudioRequest>> = OnceLock::new();
 enum AudioRequest {
-    Play{data: Vec<u8>, id: u32}
+    Play{data: Vec<u8>, id: String}
 }
 
 #[derive(serde::Serialize,Clone)]
 #[serde(rename_all = "camelCase")]
 struct AudioPlayed {
-    id: u32
+    id: String
 }
 
 impl AudioDevice {

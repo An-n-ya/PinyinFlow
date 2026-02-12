@@ -8,8 +8,8 @@ static EVENT_SENDER: OnceLock<mpsc::UnboundedSender<FEvent>> = OnceLock::new();
 
 #[derive(Clone, Debug, Serialize)]
 pub enum FEvent {
-    TTSFinished{timestamp: u64, id: u32},
-    AudioPlayed{id: u32}
+    TTSFinished{timestamp: u64, id: String},
+    AudioPlayed{id: String}
 }
 
 

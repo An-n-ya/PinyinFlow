@@ -7,12 +7,12 @@ use crate::device::websocket::WsClient;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PlayResond {
     pub data: Vec<u8>,
-    pub id: u32
+    pub id: String
 }
 #[derive(Serialize, Debug)]
 pub struct PlayRequest {
     input: String,
-    id: usize
+    id: String
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PinyinRespond {
@@ -32,7 +32,7 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 
     let req_body = PlayRequest {
         input: input.to_string(),
-        id: 1
+        id: "1".to_string()
     };
 
     let res = client
@@ -52,7 +52,7 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 }
 
 #[tauri::command]
-pub async fn play(id: usize, input: String) -> TAResult<()> {
+pub async fn play(id: String, input: String) -> TAResult<()> {
     WsClient::handle_play(PlayRequest{id, input})?;
     return Ok(());
 }

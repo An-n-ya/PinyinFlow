@@ -9,6 +9,7 @@ use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use chrono::Local;
 use chrono::Utc;
+use uuid::Uuid;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
 use reqwest::Client;
@@ -166,18 +167,18 @@ fn distribute_binary_data(data: &[u8]) -> WsEvent {
 }
 
 fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
-    ensure!(data.len() > 24);
+    ensure!(data.len() > 36);
     let magic_bytes = &data[0..20];
     let binding = String::from_utf8(magic_bytes.to_vec()).unwrap();
     let magic = binding.trim_end_matches('\0');
     match magic {
         "play" => {
 
-            let id_bytes = &data[20..24];
-            let id = LittleEndian::read_u32(id_bytes) ;
-            FClient::send_event(FEvent::TTSFinished { timestamp: Utc::now().timestamp_millis() as u64, id: id });
+            let id_bytes = &data[20..36];
+            let id = Uuid::from_slice(id_bytes)?.to_string();
+            FClient::send_event(FEvent::TTSFinished { timestamp: Utc::now().timestamp_millis() as u64, id: id.clone() });
             
-            let pcm_data = data[24..].to_vec();
+            let pcm_data = data[36..].to_vec();
             return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }))
         },
         _ => {
