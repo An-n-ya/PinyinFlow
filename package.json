@@ -11,6 +11,7 @@
     "test": "vitest",
     "format:fe": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,scss}\"",
     "format:rs": "cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss}\" && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check",
     "format": "pnpm run format:fe && pnpm run format:rs",
     "prepare": "husky"
   },
