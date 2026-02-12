@@ -5,7 +5,7 @@ import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
 class MessageType {
-    id: number = Date.now() % 2147483647; // FIXME: switch to uuid
+    id: string = crypto.randomUUID();
     text: string = '';
     sender: 'user' | 'ai' = 'user';
     date: string = new Date().toLocaleDateString([], { hour: '2-digit', minute: '2-digit' });
@@ -44,7 +44,7 @@ class MessageType {
 
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: number, input: string) {
+    async function play(id: string, input: string) {
         try {
             await invoke('play', { id, input });
         } catch (error_msg) {
@@ -53,13 +53,13 @@ export default function Chat() {
     }
 
     useEffect(() => {
-        const unlistenPromise = listen<{ AudioPlayed: { id: number } }>('audio-played', event => {
+        const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
             const finishedId = event.payload.AudioPlayed.id;
             console.info(`audio id${finishedId} played`);
 
             setMessages(prev => prev.map(m => (m.id === finishedId ? m.play_finished() : m)));
         });
-        const unlistenTTSfinished = listen<{ TTSFinished: { id: number; timestamp: number } }>(
+        const unlistenTTSfinished = listen<{ TTSFinished: { id: string; timestamp: number } }>(
             'tts-finished',
             event => {
                 const payload = event.payload.TTSFinished;
