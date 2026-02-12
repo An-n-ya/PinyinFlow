@@ -1,5 +1,5 @@
 import AudioVisualizer from '@/lib/AudioVisualizer';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
 
 interface MessageBubbleProps {
