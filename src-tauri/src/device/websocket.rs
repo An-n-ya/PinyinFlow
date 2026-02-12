@@ -78,6 +78,10 @@ impl WsClient {
                         "WebSocket disconnected, reconnecting in {}s...",
                         RECONNECT_DELAY_SECS
                     );
+                    log::warn!(
+                        "WebSocket disconnected, reconnecting in {}s...",
+                        RECONNECT_DELAY_SECS
+                    );
                     tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
                 }
             }
@@ -183,7 +187,7 @@ fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
                 id: id.clone(),
             });
 
-            let pcm_data = data[36..].to_vec();
+            let pcm_data = data[24..].to_vec();
             return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }));
         }
         _ => {
