@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
@@ -44,13 +44,24 @@ class MessageType {
 
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: string, input: string) {
+
+    const play = useCallback(async (id: string, input: string) => {
         try {
             await invoke('play', { id, input });
         } catch (error_msg) {
             console.error(error_msg);
         }
-    }
+    }, []);
+
+    const handleReplay = useCallback(
+        async (id: string, text: string) => {
+            setMessages(prev =>
+                prev.map(m => (m.id === id ? new MessageType({ ...m, isPlaying: true }) : m))
+            );
+            await play(id, text);
+        },
+        [play]
+    );
 
     useEffect(() => {
         const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
@@ -85,7 +96,7 @@ export default function Chat() {
     }
     return (
         <div className="flex h-screen flex-col">
-            <ChatHistory messages={messages}></ChatHistory>
+            <ChatHistory messages={messages} onReplay={handleReplay}></ChatHistory>
             <InputArea onSendMessage={submit_pinyin} />
         </div>
     );
@@ -93,14 +104,14 @@ export default function Chat() {
 
 const TEST_DATA: MessageType[] = [
     new MessageType({
-        id: 1,
+        id: '1',
         text: '你好，这是一个测试',
         sender: 'user',
         date: '10:00',
         isPlaying: false,
     }),
     new MessageType({
-        id: 2,
+        id: '2',
         text: '你好',
         sender: 'ai',
         date: '10:01',

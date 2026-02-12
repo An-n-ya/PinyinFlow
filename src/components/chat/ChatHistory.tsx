@@ -1,4 +1,4 @@
-import { MessageBubble } from './MesageBubble';
+import { MessageBubble } from './MessageBubble';
 
 import {
     Conversation,
@@ -8,16 +8,15 @@ import {
 
 interface ChatHistoryProps {
     messages: MessageType[];
-    onPlay?: (id: number) => void;
-    onStop?: (id: number) => void;
+    onReplay?: (id: string, text: string) => void;
 }
 
-export function ChatHistory({ messages }: ChatHistoryProps) {
+export function ChatHistory({ messages, onReplay }: ChatHistoryProps) {
     return (
         <Conversation className="size-full">
             <ConversationContent>
                 {messages.map(msg => (
-                    <MessageBubble key={msg.id} message={msg} />
+                    <MessageBubble key={msg.id} message={msg} onReplay={onReplay} />
                 ))}
             </ConversationContent>
             <ConversationScrollButton />
