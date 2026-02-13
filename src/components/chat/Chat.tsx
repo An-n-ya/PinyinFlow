@@ -46,7 +46,8 @@ export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
     async function play(id: string, input: string) {
         try {
-            await invoke('play', { id, input });
+            let revised_input = await invoke('proofread', { id, input });
+            await invoke('play', { id, input: revised_input });
         } catch (error_msg) {
             console.error(error_msg);
         }
@@ -93,14 +94,14 @@ export default function Chat() {
 
 const TEST_DATA: MessageType[] = [
     new MessageType({
-        id: 1,
+        id: '1',
         text: '你好，这是一个测试',
         sender: 'user',
         date: '10:00',
         isPlaying: false,
     }),
     new MessageType({
-        id: 2,
+        id: '2',
         text: '你好',
         sender: 'ai',
         date: '10:01',
