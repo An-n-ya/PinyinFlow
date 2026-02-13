@@ -1,5 +1,6 @@
 mod commands;
 mod device;
+mod service;
 
 use crate::commands::{play, split, tone};
 use crate::device::audio::AudioDevice;
