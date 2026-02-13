@@ -71,3 +71,25 @@ A: 我喜欢用拼音打字
         Ok(raw.content)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::service::llm::{
+        domain::TaskType,
+        service::LlmService,
+        strategy::proofread::{ProofreadBuilder, ProofreadContext},
+    };
+
+    #[tokio::test]
+    async fn test_proofread() {
+        let service = LlmService::service_for_test();
+        let input = ProofreadContext {
+            text: "Rust预言真好用！".into(),
+        };
+        let res = service
+            .execute_task(TaskType::Proofread, ProofreadBuilder::default(), input)
+            .await
+            .unwrap();
+        println!("{:?}", res);
+    }
+}

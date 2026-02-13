@@ -46,6 +46,20 @@ impl LlmService {
         }
     }
 
+    pub(crate) fn service_for_test() -> Self {
+        dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
+        let openai_providers: Vec<_> = LLM_PROVIDER
+            .iter()
+            .map(|(api, model, url)| {
+                OpenAiProvider::new(env::var(api).unwrap(), model.to_string(), url.to_string())
+            })
+            .collect();
+        LlmService {
+            providers: HashMap::new(),
+            default_provider: LlmBackend::OpenAi(openai_providers[1].clone()),
+        }
+    }
+
     pub fn register_provider(&mut self, task: TaskType, provider: LlmBackend) {
         self.providers.insert(task, provider);
     }
@@ -71,41 +85,5 @@ impl LlmService {
             .unwrap();
 
         strategy.parse_response(raw_responsee)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{env, path::Path};
-
-    use crate::service::llm::{
-        provider::OpenAiProvider,
-        strategy::proofread::{ProofreadBuilder, ProofreadContext},
-    };
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_proofread() {
-        dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
-        let openai_providers: Vec<_> = LLM_PROVIDER
-            .iter()
-            .map(|(api, model, url)| {
-                OpenAiProvider::new(env::var(api).unwrap(), model.to_string(), url.to_string())
-            })
-            .collect();
-        let service = LlmService {
-            providers: HashMap::new(),
-            default_provider: LlmBackend::OpenAi(openai_providers[1].clone()),
-        };
-
-        let input = ProofreadContext {
-            text: "Rust预言真好用！".into(),
-        };
-        let res = service
-            .execute_task(TaskType::Proofread, ProofreadBuilder::default(), input)
-            .await
-            .unwrap();
-        println!("{:?}", res);
     }
 }
