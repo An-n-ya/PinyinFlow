@@ -17,8 +17,8 @@ export const MessageBubble = memo(function MessageBubble({
 
     return (
         <Message from={from}>
-            <MessageContent className="flex-row">
-                {message.isPlaying && <AudioVisualizer />}
+            <MessageContent className="flex flex-row">
+                <AudioVisualizer isPlaying={message.isPlaying} />
                 <MessageResponse>{message.text}</MessageResponse>
             </MessageContent>
             {/* <MessageActions>
