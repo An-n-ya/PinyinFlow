@@ -1,9 +1,29 @@
 use anyhow::Result;
 use std::collections::HashMap;
+use std::env;
+use std::path::Path;
 
 use crate::service::llm::domain::TaskType;
-use crate::service::llm::provider::LlmBackend;
+use crate::service::llm::provider::{LlmBackend, OpenAiProvider};
 use crate::service::llm::strategy::TaskStrategy;
+
+const LLM_PROVIDER: [(&str, &str, &str); 3] = [
+    (
+        "VITE_LONGCAT_API_KEY",
+        "LongCat-Flash-Chat",
+        "https://api.longcat.chat/openai",
+    ),
+    (
+        "VITE_SILICONFLOW_API_KEY",
+        "Qwen/Qwen3-8B",
+        "https://api.siliconflow.cn/v1/",
+    ),
+    (
+        "LOCAL_KEY",
+        "Qwen/Qwen3-1.7B-GGUF",
+        "http://127.0.0.1:8033/v1/",
+    ),
+];
 
 pub struct LlmService {
     providers: HashMap<TaskType, LlmBackend>,
@@ -11,10 +31,18 @@ pub struct LlmService {
 }
 
 impl LlmService {
-    pub fn new(default_provider: LlmBackend) -> Self {
-        Self {
+    pub fn init() -> Self {
+        // TODO: load api_key from Sqlite database
+        dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
+        let openai_providers: Vec<_> = LLM_PROVIDER
+            .iter()
+            .map(|(api, model, url)| {
+                OpenAiProvider::new(env::var(api).unwrap(), model.to_string(), url.to_string())
+            })
+            .collect();
+        LlmService {
             providers: HashMap::new(),
-            default_provider: default_provider,
+            default_provider: LlmBackend::OpenAi(openai_providers[0].clone()),
         }
     }
 
@@ -57,24 +85,6 @@ mod tests {
 
     use super::*;
 
-    const LLM_PROVIDER: [(&str, &str, &str); 3] = [
-        (
-            "VITE_LONGCAT_API_KEY",
-            "LongCat-Flash-Chat",
-            "https://api.longcat.chat/openai",
-        ),
-        (
-            "VITE_SILICONFLOW_API_KEY",
-            "Qwen/Qwen3-8B",
-            "https://api.siliconflow.cn/v1/",
-        ),
-        (
-            "LOCAL_KEY",
-            "Qwen/Qwen3-1.7B-GGUF",
-            "http://127.0.0.1:8033/v1/",
-        ),
-    ];
-
     #[tokio::test]
     async fn test_proofread() {
         dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
@@ -84,7 +94,10 @@ mod tests {
                 OpenAiProvider::new(env::var(api).unwrap(), model.to_string(), url.to_string())
             })
             .collect();
-        let service = LlmService::new(LlmBackend::OpenAi(openai_providers[1].clone()));
+        let service = LlmService {
+            providers: HashMap::new(),
+            default_provider: LlmBackend::OpenAi(openai_providers[1].clone()),
+        };
 
         let input = ProofreadContext {
             text: "Rust预言真好用！".into(),

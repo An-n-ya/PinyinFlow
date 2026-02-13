@@ -2,11 +2,15 @@ mod commands;
 mod device;
 mod service;
 
-use crate::commands::{play, split, tone};
+use tokio::sync::Mutex;
+
+use crate::commands::{play, proofread, split, tone};
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
 use crate::device::websocket::WsClient;
+use crate::service::llm::service::LlmService;
 use chrono::Local;
+use tauri::Manager;
 
 fn trim_webview_target(target: &str) -> &str {
     if target.starts_with("webview:") {
@@ -51,9 +55,10 @@ pub fn run() {
             FClient::init(app.handle().clone());
             AudioDevice::init(app.handle().clone())?;
             AudioDevice::listen(&ws_client);
+            app.manage(Mutex::new(LlmService::init()));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![split, tone, play])
+        .invoke_handler(tauri::generate_handler![split, tone, play, proofread])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
