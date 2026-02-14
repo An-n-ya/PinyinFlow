@@ -29,11 +29,15 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                 <PromptInputTextarea
                     value={input}
                     placeholder="请输入拼音..."
+                    aria-label="输入拼音"
                     onChange={e => setInput(e.target.value)}
                     className="h-40 pr-12"
                 />
                 <PromptInputFooter>
-                    <PromptInputButton tooltip="选择模型">
+                    <PromptInputButton
+                        tooltip="模型选择暂不可用"
+                        className="opacity-50 cursor-not-allowed"
+                    >
                         <CuboidIcon />
                         <span>模型</span>
                     </PromptInputButton>
