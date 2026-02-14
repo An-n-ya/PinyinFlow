@@ -15,6 +15,7 @@ interface InputAreaProps {
 
 export function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
+    const [suggestion, setSuggestion] = useState(['a', 'b', 'c'] as string[]);
 
     const handleSend = () => {
         if (!input.trim()) return;
@@ -27,6 +28,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         <>
             <PromptInput onSubmit={handleSend} className="relative mx-auto mt-4 w-full max-w-2xl">
                 <PromptInputTextarea
+                    suggestion={suggestion}
                     value={input}
                     placeholder="请输入拼音..."
                     onChange={e => setInput(e.target.value)}

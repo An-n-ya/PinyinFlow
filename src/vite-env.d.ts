@@ -16,3 +16,7 @@ interface MessageType {
 interface TimeComsumption {
     tts: number;
 }
+
+interface AutocompleteTextareaProps extends React.ComponentProps<'textarea'> {
+    suggestion: string[];
+}
