@@ -1,5 +1,5 @@
 use crate::service::llm::{
-    domain::{LlmMetadata, Message, RawLlmResponse, Role},
+    domain::{LlmMetadata, LlmResponse, Message, RawLlmResponse, Role},
     provider::GenConfig,
     strategy::{TaskContext, TaskStrategy},
 };
@@ -61,14 +61,19 @@ A: 我喜欢用拼音打字
             max_tokens: None,
             temperature: 0.2,
             top_p: 0.8,
+            stream: false,
         }
     }
 
     fn user_messages(&self, input: &Self::Input) -> Vec<Message> {
         vec![Message::new(Role::User, input.text.clone())]
     }
-    fn parse_response(&self, raw: RawLlmResponse) -> Result<Self::Output> {
-        Ok(raw.content)
+    fn parse_response(&self, raw: LlmResponse) -> Result<Self::Output> {
+        if let LlmResponse::Raw(raw) = raw {
+            Ok(raw.content)
+        } else {
+            anyhow::bail!("Unexpected response type")
+        }
     }
 }
 

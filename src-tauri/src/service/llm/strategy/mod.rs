@@ -1,5 +1,5 @@
 use crate::service::llm::{
-    domain::{Message, RawLlmResponse, Role},
+    domain::{LlmResponse, Message, Role},
     provider::GenConfig,
 };
 use anyhow::Result;
@@ -27,5 +27,5 @@ pub trait TaskStrategy: Send + Sync {
 
     fn user_messages(&self, input: &Self::Input) -> Vec<Message>;
 
-    fn parse_response(&self, raw: RawLlmResponse) -> Result<Self::Output>;
+    fn parse_response(&self, raw: LlmResponse) -> Result<Self::Output>;
 }

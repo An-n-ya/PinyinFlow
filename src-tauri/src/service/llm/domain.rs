@@ -1,4 +1,7 @@
-use openai::chat::{ChatCompletionMessage, ChatCompletionMessageRole};
+use openai::chat::{
+    ChatCompletionChoiceDelta, ChatCompletionGeneric, ChatCompletionMessage,
+    ChatCompletionMessageRole,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,10 +48,27 @@ pub struct LlmMetadata {
     pub finish_reason: Option<String>,
 }
 
+type ChatComletionDelta = ChatCompletionGeneric<ChatCompletionChoiceDelta>;
+
+#[derive(Debug)]
+pub enum LlmResponse {
+    Raw(RawLlmResponse),
+    Stream(tokio::sync::mpsc::Receiver<ChatComletionDelta>),
+}
+
 #[derive(Debug, Clone)]
 pub struct RawLlmResponse {
     pub content: String, // string or JSON
     pub meta: Option<LlmMetadata>,
+}
+
+pub trait LlmRes {
+    fn content(&self) -> String;
+}
+impl LlmRes for ChatCompletionMessage {
+    fn content(&self) -> String {
+        self.content.clone().unwrap_or("".to_string())
+    }
 }
 
 // Adapter
