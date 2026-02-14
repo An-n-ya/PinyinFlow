@@ -72,7 +72,7 @@ pub struct LocalProvider {
 }
 
 impl LlmProvider for LocalProvider {
-    async fn generate(&self, messages: &[Message], _config: &GenConfig) -> Result<LlmResponse> {
+    async fn generate(&self, _messages: &[Message], _config: &GenConfig) -> Result<LlmResponse> {
         unimplemented!("LocalProvider::generate")
     }
 }

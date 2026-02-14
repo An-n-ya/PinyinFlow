@@ -72,7 +72,7 @@ pub async fn play(id: String, input: String) -> TAResult<()> {
 #[tauri::command]
 pub async fn proofread(
     state: State<'_, Mutex<LlmService>>,
-    id: String,
+    _id: String,
     input: String,
 ) -> TAResult<String> {
     let input_ = ProofreadContext {
