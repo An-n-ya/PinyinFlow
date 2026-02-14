@@ -4,7 +4,7 @@ mod service;
 
 use tokio::sync::Mutex;
 
-use crate::commands::{play, proofread, split, tone};
+use crate::commands::{complete_message, play, proofread, split, tone};
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
 use crate::device::websocket::WsClient;
@@ -58,7 +58,13 @@ pub fn run() {
             app.manage(Mutex::new(LlmService::init()));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![split, tone, play, proofread])
+        .invoke_handler(tauri::generate_handler![
+            split,
+            tone,
+            play,
+            proofread,
+            complete_message
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

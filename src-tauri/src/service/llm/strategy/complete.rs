@@ -89,8 +89,6 @@ impl TaskStrategy for CompleteBuilder {
 mod tests {
     use std::time::Duration;
 
-    use tokio::sync::{mpsc, oneshot};
-
     use crate::service::llm::domain::TaskType;
     use crate::service::llm::{
         service::LlmService,

@@ -1,12 +1,8 @@
 use serde::{Deserialize, Serialize};
-use tauri::ipc::Channel;
 
-use crate::{
-    commands::ReplyCompleteEvent,
-    service::llm::{
-        domain::{LlmMetadata, LlmResponse, Message, Role},
-        strategy::{TaskContext, TaskStrategy},
-    },
+use crate::service::llm::{
+    domain::{LlmMetadata, LlmResponse, Message, Role},
+    strategy::{TaskContext, TaskStrategy},
 };
 
 enum MessageRole {

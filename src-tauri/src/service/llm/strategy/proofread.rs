@@ -1,5 +1,5 @@
 use crate::service::llm::{
-    domain::{LlmMetadata, LlmResponse, Message, RawLlmResponse, Role},
+    domain::{LlmMetadata, LlmResponse, Message, Role},
     provider::GenConfig,
     strategy::{TaskContext, TaskStrategy},
 };

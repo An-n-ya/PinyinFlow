@@ -12,7 +12,7 @@ use std::{
     io::Cursor,
     sync::{mpsc::Sender, OnceLock},
 };
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 pub struct AudioDevice {}
 
 static AUDIO_SINK: OnceLock<Sender<AudioRequest>> = OnceLock::new();
@@ -27,7 +27,7 @@ struct AudioPlayed {
 }
 
 impl AudioDevice {
-    pub fn init(app: AppHandle) -> Result<()> {
+    pub fn init(_app: AppHandle) -> Result<()> {
         let (tx, rx) = std::sync::mpsc::channel::<AudioRequest>();
         AUDIO_SINK
             .set(tx)

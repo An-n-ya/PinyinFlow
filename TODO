@@ -9,6 +9,9 @@
       
 - [ ] integrate sqlite to persist user information
   
+  
+## LLM
+- [x] stream support
 
 ## longterm target
 - [ ] integrate librime
@@ -25,7 +28,6 @@
 ## integrate remote service
 - [ ] token counting
 - [ ] introduce MCP support
-  
 
 ## WebSocket
 - [ ] Refactor message payload id
