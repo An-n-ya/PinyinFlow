@@ -4,13 +4,14 @@ use openai::{
     Credentials,
 };
 
-use crate::service::llm::domain::{Message, RawLlmResponse};
+use crate::service::llm::domain::{LlmResponse, Message, RawLlmResponse};
 
 #[derive(Debug, Clone)]
 pub struct GenConfig {
     pub temperature: f32,
     pub top_p: f32,
     pub max_tokens: Option<u32>,
+    pub stream: bool,
 }
 
 impl Default for GenConfig {
@@ -19,12 +20,13 @@ impl Default for GenConfig {
             temperature: 1.0,
             top_p: 1.0,
             max_tokens: None,
+            stream: false,
         }
     }
 }
 
 pub trait LlmProvider: Send + Sync {
-    async fn generate(&self, messages: &[Message], config: &GenConfig) -> Result<RawLlmResponse>;
+    async fn generate(&self, messages: &[Message], config: &GenConfig) -> Result<LlmResponse>;
 }
 
 #[derive(Debug, Clone)]
@@ -45,7 +47,7 @@ impl OpenAiProvider {
 }
 
 impl LlmProvider for OpenAiProvider {
-    async fn generate(&self, messages: &[Message], config: &GenConfig) -> Result<RawLlmResponse> {
+    async fn generate(&self, messages: &[Message], config: &GenConfig) -> Result<LlmResponse> {
         let messages: Vec<ChatCompletionMessage> =
             messages.to_vec().into_iter().map(|v| v.into()).collect();
         let credential = Credentials::new(self.api_key.clone(), self.entrypoint.clone());
@@ -53,12 +55,15 @@ impl LlmProvider for OpenAiProvider {
         let chat_completion = ChatCompletion::builder(&self.model, messages)
             .credentials(credential)
             .temperature(config.temperature)
-            .top_p(config.top_p)
-            .create()
-            .await
-            .unwrap();
-        let returned_message = chat_completion.choices.first().unwrap().message.clone();
-        Ok(RawLlmResponse::from(returned_message))
+            .top_p(config.top_p);
+        if config.stream {
+            let chat_completion = chat_completion.stream(true).create_stream().await.unwrap();
+            Ok(LlmResponse::Stream(chat_completion))
+        } else {
+            let chat_completion = chat_completion.create().await.unwrap();
+            let returned_message = chat_completion.choices.first().unwrap().message.clone();
+            Ok(LlmResponse::Raw(RawLlmResponse::from(returned_message)))
+        }
     }
 }
 
@@ -67,7 +72,7 @@ pub struct LocalProvider {
 }
 
 impl LlmProvider for LocalProvider {
-    async fn generate(&self, messages: &[Message], _config: &GenConfig) -> Result<RawLlmResponse> {
+    async fn generate(&self, messages: &[Message], _config: &GenConfig) -> Result<LlmResponse> {
         unimplemented!("LocalProvider::generate")
     }
 }
@@ -78,11 +83,7 @@ pub enum LlmBackend {
 }
 
 impl LlmBackend {
-    pub async fn generate(
-        &self,
-        messages: &[Message],
-        config: &GenConfig,
-    ) -> Result<RawLlmResponse> {
+    pub async fn generate(&self, messages: &[Message], config: &GenConfig) -> Result<LlmResponse> {
         match self {
             LlmBackend::OpenAi(provider) => provider.generate(messages, config).await,
             LlmBackend::Local(provider) => provider.generate(messages, config).await,

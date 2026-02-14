@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
+use tauri::ipc::Channel;
 
-use crate::service::llm::{
-    domain::{LlmMetadata, Message, Role},
-    strategy::{TaskContext, TaskStrategy},
+use crate::{
+    commands::ReplyCompleteEvent,
+    service::llm::{
+        domain::{LlmMetadata, LlmResponse, Message, Role},
+        strategy::{TaskContext, TaskStrategy},
+    },
 };
 
 enum MessageRole {
@@ -35,7 +39,7 @@ impl ReplyContext {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct ReplyBuilder;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -88,14 +92,16 @@ impl TaskStrategy for ReplyBuilder {
             max_tokens: None,
             temperature: 0.4,
             top_p: 0.7,
+            stream: false,
         }
     }
 
-    fn parse_response(
-        &self,
-        raw: crate::service::llm::domain::RawLlmResponse,
-    ) -> anyhow::Result<Self::Output> {
-        Ok(raw.content)
+    fn parse_response(&self, raw: LlmResponse) -> anyhow::Result<Self::Output> {
+        if let LlmResponse::Raw(raw) = raw {
+            Ok(raw.content)
+        } else {
+            anyhow::bail!("Unexpected response type")
+        }
     }
 }
 

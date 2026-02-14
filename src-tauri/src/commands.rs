@@ -1,7 +1,7 @@
 use anyhow::Result;
 use anyhow_tauri::TAResult;
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{ipc::Channel, State};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -9,7 +9,10 @@ use crate::{
     service::llm::{
         domain::TaskType,
         service::LlmService,
-        strategy::proofread::{ProofreadBuilder, ProofreadContext},
+        strategy::{
+            complete::{CompleteBuilder, CompleteContext},
+            proofread::{ProofreadBuilder, ProofreadContext},
+        },
     },
 };
 
@@ -82,4 +85,26 @@ pub async fn proofread(
         .unwrap();
     log::info!("proofread: origin: {input}, revised: {:?}", res);
     Ok(res)
+}
+
+#[derive(Serialize, Debug)]
+pub enum ReplyCompleteEvent {
+    Finished,
+    Content(String),
+}
+
+#[tauri::command]
+pub async fn complete_message(
+    state: State<'_, Mutex<LlmService>>,
+    input: String,
+    on_event: Channel<ReplyCompleteEvent>,
+) -> TAResult<()> {
+    let input_ = CompleteContext::new(input.clone());
+    let service = state.lock().await;
+    service
+        .execute_task(TaskType::Continue, CompleteBuilder::new(on_event), input_)
+        .await
+        .unwrap();
+    log::info!("complete_message: {input}");
+    Ok(())
 }
