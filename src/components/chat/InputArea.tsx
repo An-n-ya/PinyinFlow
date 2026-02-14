@@ -36,7 +36,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                 <PromptInputFooter>
                     <PromptInputButton
                         tooltip="模型选择暂不可用"
-                        className="opacity-50 cursor-not-allowed"
+                        className="cursor-not-allowed opacity-50"
                     >
                         <CuboidIcon />
                         <span>模型</span>
