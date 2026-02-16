@@ -3,13 +3,7 @@ import { useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 
-const AutocompleteTextarea = ({
-    className,
-    onInput,
-    onKeyDown,
-    suggestion,
-    ...props
-}: AutocompleteTextareaProps) => {
+const AutocompleteTextarea = ({ className, suggestion, ...props }: AutocompleteTextareaProps) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // const fullResponse = '这是一个模拟的流式响应...\n它可以分段显示文字，\n就像真实的 AI 一样。';
