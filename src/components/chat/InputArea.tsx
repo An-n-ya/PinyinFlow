@@ -20,8 +20,17 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
     const handleSend = () => {
         if (!input.trim()) return;
 
+        setSuggestion([]);
         onSendMessage(input);
         setInput('');
+    };
+
+    const handleKeyDown = e => {
+        if (e.key === 'Tab' && suggestion) {
+            e.preventDefault();
+            setInput(input + suggestion);
+            setSuggestion([]);
+        }
     };
 
     return (
@@ -32,6 +41,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                     value={input}
                     placeholder="请输入拼音..."
                     onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="h-40 pr-12"
                 />
                 <PromptInputFooter>
