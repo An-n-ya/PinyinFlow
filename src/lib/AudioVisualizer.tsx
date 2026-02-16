@@ -20,22 +20,9 @@ const AudioVisualizer = ({ isPlaying }: AudioVisualizerProps) => {
             fill="currentColor"
             xmlns="http://www.w3.org/2000/svg"
         >
-            <style>
-                {`
-            .bar {
-              animation: quiet 1.2s ease-in-out infinite;
-              transform-origin: bottom;
-            }
-            @keyframes quiet {
-              0%, 100% { transform: scaleY(0.3); }
-              50% { transform: scaleY(1); }
-            }
-          `}
-            </style>
-
             {/* 四根跳动的柱子 */}
             <rect
-                className="bar"
+                className="audio-visualizer-bar"
                 x="2"
                 y="4"
                 width="3"
@@ -44,7 +31,7 @@ const AudioVisualizer = ({ isPlaying }: AudioVisualizerProps) => {
                 style={{ animationDuration: '0.8s' }}
             />
             <rect
-                className="bar"
+                className="audio-visualizer-bar"
                 x="8"
                 y="4"
                 width="3"
@@ -53,7 +40,7 @@ const AudioVisualizer = ({ isPlaying }: AudioVisualizerProps) => {
                 style={{ animationDuration: '0.5s' }}
             />
             <rect
-                className="bar"
+                className="audio-visualizer-bar"
                 x="14"
                 y="4"
                 width="3"
@@ -62,7 +49,7 @@ const AudioVisualizer = ({ isPlaying }: AudioVisualizerProps) => {
                 style={{ animationDuration: '0.7s' }}
             />
             <rect
-                className="bar"
+                className="audio-visualizer-bar"
                 x="20"
                 y="4"
                 width="3"
