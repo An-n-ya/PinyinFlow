@@ -28,6 +28,7 @@
 ## integrate remote service
 - [ ] token counting
 - [ ] introduce MCP support
-
-## WebSocket
-- [ ] Refactor message payload id
+  
+## add switch to toggle complete function
+- [ ] introduce zustand to mange state
+- [ ] introduce sql to persist user's preference
