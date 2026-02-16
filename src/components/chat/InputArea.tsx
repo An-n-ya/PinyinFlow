@@ -6,16 +6,25 @@ import {
     PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Channel, invoke } from '@tauri-apps/api/core';
 import { CuboidIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface InputAreaProps {
     onSendMessage: (text: string) => void;
 }
 
+type ReplyCompleteEvent =
+    | {
+          event: 'finished';
+          data: {};
+      }
+    | { event: 'content'; data: string };
+
 export function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
     const [suggestion, setSuggestion] = useState(['a', 'b', 'c'] as string[]);
+    const timeoutRef = useRef<NodeJS.Timeout>(null);
 
     const handleSend = () => {
         if (!input.trim()) return;
@@ -25,11 +34,34 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         setInput('');
     };
 
-    const handleKeyDown = e => {
+    const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Tab' && suggestion) {
             e.preventDefault();
-            setInput(input + suggestion);
+            setInput(input + suggestion.join(''));
             setSuggestion([]);
+            timeoutRef.current?.close();
+            return;
+        }
+        // clear suggestion
+        setSuggestion([]);
+
+        if (e.key !== 'Escape') {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(async () => {
+                const onEvent = new Channel<ReplyCompleteEvent>();
+                onEvent.onmessage = message => {
+                    if (message.event === 'content') {
+                        setSuggestion(prev => prev.concat(message.data));
+                    } else if (message.event === 'finished') {
+                        return;
+                    }
+                };
+
+                await invoke('complete_message', {
+                    input: '你是谁',
+                    onEvent,
+                });
+            }, 500);
         }
     };
 

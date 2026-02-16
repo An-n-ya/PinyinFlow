@@ -88,6 +88,12 @@ pub async fn proofread(
 }
 
 #[derive(Serialize, Debug)]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "event",
+    content = "data"
+)]
 pub enum ReplyCompleteEvent {
     Finished,
     Content(String),
