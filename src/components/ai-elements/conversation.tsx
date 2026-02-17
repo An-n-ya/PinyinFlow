@@ -74,6 +74,7 @@ export const ConversationScrollButton = ({
     return (
         !isAtBottom && (
             <Button
+                aria-label="Scroll to bottom"
                 className={cn(
                     'dark:bg-background dark:hover:bg-muted absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full',
                     className
@@ -134,6 +135,7 @@ export const ConversationDownload = ({
 
     return (
         <Button
+            aria-label="Download conversation"
             className={cn(
                 'dark:bg-background dark:hover:bg-muted absolute top-4 right-4 rounded-full',
                 className
