@@ -1,19 +1,33 @@
 import AudioVisualizer from '@/lib/AudioVisualizer';
-import { memo } from 'react';
-import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
+import { Check, Copy } from 'lucide-react';
+import { memo, useState } from 'react';
+import {
+    Message,
+    MessageAction,
+    MessageActions,
+    MessageContent,
+    MessageResponse,
+} from '../ai-elements/message';
 
 interface MessageBubbleProps {
     message: MessageType;
-    onPlay?: (id: number) => void;
-    onStop?: (id: number) => void;
+    onPlay?: (id: string) => void;
+    onStop?: (id: string) => void;
 }
 
-export const MessageBubble = memo(function MessageBubble({
-    message,
-    onPlay,
-    onStop,
-}: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
     const from = message.sender === 'user' ? 'user' : 'assistant';
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(message.text);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    };
 
     return (
         <Message from={from}>
@@ -21,11 +35,15 @@ export const MessageBubble = memo(function MessageBubble({
                 <AudioVisualizer isPlaying={message.isPlaying} />
                 <MessageResponse>{message.text}</MessageResponse>
             </MessageContent>
-            {/* <MessageActions>
-                <MessageAction label="Copy">
-                    <CopyIcon/>
+            <MessageActions className={from === 'user' ? 'mr-2 ml-auto' : 'ml-2'}>
+                <MessageAction
+                    label={isCopied ? '已复制' : '复制'}
+                    tooltip={isCopied ? '已复制' : '复制'}
+                    onClick={handleCopy}
+                >
+                    {isCopied ? <Check size={16} /> : <Copy size={16} />}
                 </MessageAction>
-            </MessageActions> */}
+            </MessageActions>
         </Message>
     );
 });
