@@ -124,3 +124,18 @@
         @apply bg-background text-foreground;
     }
 }
+
+.audio-visualizer-bar {
+    animation: audio-visualizer-quiet 1.2s ease-in-out infinite;
+    transform-origin: bottom;
+}
+
+@keyframes audio-visualizer-quiet {
+    0%,
+    100% {
+        transform: scaleY(0.3);
+    }
+    50% {
+        transform: scaleY(1);
+    }
+}
