@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "pinyin_flow",
+        "title": "VoiceRelay",
         "width": 800,
         "height": 600,
         "decorations": false

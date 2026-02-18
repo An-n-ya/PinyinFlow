@@ -32,3 +32,4 @@
 ## add switch to toggle complete function
 - [ ] introduce zustand to mange state
 - [ ] introduce sql to persist user's preference
+- [x] add a setting page (support router)
