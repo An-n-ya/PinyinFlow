@@ -34,7 +34,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         setInput('');
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Tab' && suggestion) {
             e.preventDefault();
             setInput(input + suggestion.join(''));
@@ -67,7 +67,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
 
     return (
         <>
-            <PromptInput onSubmit={handleSend} className="relative mx-auto mt-4 w-full max-w-2xl">
+            <PromptInput onSubmit={handleSend} className="my-4 w-full max-w-2xl flex-none">
                 <PromptInputTextarea
                     suggestion={suggestion}
                     value={input}

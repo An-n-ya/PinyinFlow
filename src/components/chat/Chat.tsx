@@ -85,9 +85,11 @@ export default function Chat() {
         play(newMsg.id, pinyin);
     }
     return (
-        <div className="flex h-screen flex-col">
-            <ChatHistory messages={messages}></ChatHistory>
-            <InputArea onSendMessage={submit_pinyin} />
+        <div className="flex flex-1 flex-col bg-slate-50">
+            <div className="mx-auto flex size-full max-w-md flex-1 flex-col">
+                <ChatHistory messages={messages}></ChatHistory>
+                <InputArea onSendMessage={submit_pinyin} />
+            </div>
         </div>
     );
 }
