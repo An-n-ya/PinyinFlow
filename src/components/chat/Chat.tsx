@@ -1,57 +1,21 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
+import { MessageType } from './MessageType';
 
-class MessageType {
-    id: string = crypto.randomUUID();
-    text: string = '';
-    sender: 'user' | 'ai' = 'user';
-    date: string = new Date().toLocaleDateString([], { hour: '2-digit', minute: '2-digit' });
-    timestamp: number = Date.now();
-    tc: TimeComsumption | null = null;
-    isPlaying?: boolean = false;
-    constructor(config?: Partial<MessageType>) {
-        // 使用 Object.assign 将配置合并到实例中
-        Object.assign(this, config);
-    }
-    static new_user(text: string): MessageType {
-        const msg = new MessageType();
-        msg.text = text;
-        msg.isPlaying = true;
-        return msg;
-    }
-    static new_chat_bot(text: string): MessageType {
-        const msg = MessageType.new_user(text);
-        msg.sender = 'ai';
-        return msg;
-    }
-    add_tts_timestamp(timestamp: number): MessageType {
-        this.tc = { tts: timestamp - this.timestamp };
-        return new MessageType({
-            ...this,
-            tc: this.tc,
-        });
-    }
-    play_finished(): MessageType {
-        return new MessageType({
-            ...this,
-            isPlaying: false,
-        });
+async function play(id: string, input: string) {
+    try {
+        let revised_input = await invoke('proofread', { id, input });
+        await invoke('play', { id, input: revised_input });
+    } catch (error_msg) {
+        console.error(error_msg);
     }
 }
 
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: string, input: string) {
-        try {
-            let revised_input = await invoke('proofread', { id, input });
-            await invoke('play', { id, input: revised_input });
-        } catch (error_msg) {
-            console.error(error_msg);
-        }
-    }
 
     useEffect(() => {
         const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
@@ -78,12 +42,13 @@ export default function Chat() {
         };
     }, []);
 
-    async function submit_pinyin(pinyin: string) {
+    const submit_pinyin = useCallback(async (pinyin: string) => {
         console.info(`handle message ${pinyin}`);
         const newMsg = MessageType.new_user(pinyin);
         setMessages(prev => [...prev, newMsg]);
-        play(newMsg.id, pinyin);
-    }
+        await play(newMsg.id, pinyin);
+    }, []);
+
     return (
         <div className="flex h-screen flex-col">
             <ChatHistory messages={messages}></ChatHistory>
