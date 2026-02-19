@@ -7,6 +7,8 @@ const isNotPlayingStyle = { width: '0px', scale: 0, display: 'none' };
 const AudioVisualizer = ({ isPlaying }: AudioVisualizerProps) => {
     return (
         <motion.svg
+            role="img"
+            aria-label="正在播放音频"
             initial={isNotPlayingStyle}
             animate={isPlaying ? isPlayingStyle : isNotPlayingStyle}
             transition={{
