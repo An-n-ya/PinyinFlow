@@ -5,7 +5,7 @@ def run(playwright):
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context(viewport={'width': 800, 'height': 600})
     page = context.new_page()
-    page.goto("http://localhost:3123")
+    page.goto("http://localhost:1420")
 
     # Wait for the textarea to be visible
     textarea = page.wait_for_selector("textarea")
@@ -77,6 +77,16 @@ def run(playwright):
         print("SUCCESS: Shift+Enter inserted newline")
     else:
         print(f"ERROR: Shift+Enter failed. Content: {content!r}")
+
+    # 7. Verify AudioVisualizer Accessibility
+    # Check for SVG with role="img" and aria-label="正在播放音频"
+    # Note: It might be hidden, but present in DOM.
+    visualizer = page.locator('svg[role="img"][aria-label="正在播放音频"]')
+    count = visualizer.count()
+    if count > 0:
+        print("SUCCESS: AudioVisualizer has correct accessibility attributes.")
+    else:
+        print("ERROR: AudioVisualizer missing accessibility attributes.")
 
     browser.close()
 
