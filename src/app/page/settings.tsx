@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +13,8 @@ import {
     SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { X } from 'lucide-react';
 
 import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
@@ -120,6 +123,10 @@ export function Settings() {
         e.preventDefault();
         setActive(menu_item);
     };
+
+    const handleCloseWindow = async () => {
+        await getCurrentWebviewWindow()?.close();
+    };
     return (
         <SidebarProvider className="items-start">
             <Sidebar collapsible="none" className="flex h-screen w-40">
@@ -148,8 +155,16 @@ export function Settings() {
             </Sidebar>
             <main className="flex h-screen flex-1 flex-col overflow-hidden">
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                    <div className="flex items-center gap-2 px-4">
+                    <div className="flex w-full items-center justify-between gap-2 px-4">
                         <h1>{active.name}</h1>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full"
+                            onClick={handleCloseWindow}
+                        >
+                            <X />
+                        </Button>
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
@@ -171,3 +186,7 @@ export function Settings() {
         </SidebarProvider>
     );
 }
+
+// TODO:
+//  - [ ] 关闭 settings 子窗口功能
+//  - [ ] 引入 zustand 作设置持久化

@@ -37,8 +37,6 @@ const menu_items: MenuItem[] = [
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 function new_window(window_id: string) {
-    // const appWindow = new Window(window_id);
-
     const webview = new WebviewWindow(window_id, {
         url: '/settings',
         title: '设置',
