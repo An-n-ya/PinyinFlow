@@ -188,5 +188,4 @@ export function Settings() {
 }
 
 // TODO:
-//  - [ ] 关闭 settings 子窗口功能
 //  - [ ] 引入 zustand 作设置持久化

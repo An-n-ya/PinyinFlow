@@ -1,10 +1,14 @@
 mod commands;
+mod database;
 mod device;
+mod domain;
 mod service;
 
+use sqlx::sqlite::SqlitePoolOptions;
 use tokio::sync::Mutex;
 
 use crate::commands::{complete_message, play, proofread, split, tone};
+use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
 use crate::device::websocket::WsClient;
@@ -27,6 +31,7 @@ fn log_time() -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
@@ -49,6 +54,14 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_sql::Builder::new()
+                .add_migrations(
+                    crate::database::DB_CONNECTION,
+                    crate::database::migrations(),
+                )
+                .build(),
+        )
         .setup(|app| {
             log::info!("setup started");
             let ws_client = WsClient::init("ws://localhost:8000/play")?;
@@ -56,6 +69,9 @@ pub fn run() {
             AudioDevice::init(app.handle().clone())?;
             AudioDevice::listen(&ws_client);
             app.manage(Mutex::new(LlmService::init()));
+            let db = DataBase::init(app.handle())?;
+            app.manage(db);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
