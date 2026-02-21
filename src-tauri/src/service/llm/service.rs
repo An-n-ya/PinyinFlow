@@ -33,7 +33,6 @@ pub struct LlmService {
 impl LlmService {
     pub fn init() -> Self {
         // TODO: load api_key from Sqlite database
-        dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
         let openai_providers: Vec<_> = LLM_PROVIDER
             .iter()
             .map(|(api, model, url)| {

@@ -3,11 +3,13 @@ mod database;
 mod device;
 mod domain;
 mod service;
+mod utils;
 
-use sqlx::sqlite::SqlitePoolOptions;
+use std::path::Path;
+
 use tokio::sync::Mutex;
 
-use crate::commands::{complete_message, play, proofread, split, tone};
+use crate::commands::{complete_message, play, proofread, split, tone, update_user_preferences};
 use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
@@ -64,6 +66,8 @@ pub fn run() {
         )
         .setup(|app| {
             log::info!("setup started");
+            // FIXME: ensure env file local path
+            dotenvy::from_path(Path::new("../.env.dev.local")).unwrap();
             let ws_client = WsClient::init("ws://localhost:8000/play")?;
             FClient::init(app.handle().clone());
             AudioDevice::init(app.handle().clone())?;
@@ -79,7 +83,8 @@ pub fn run() {
             tone,
             play,
             proofread,
-            complete_message
+            complete_message,
+            update_user_preferences
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

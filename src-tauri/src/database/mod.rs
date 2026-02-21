@@ -5,11 +5,20 @@ use log::info;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use tauri::Manager;
 
+use crate::{
+    domain::{preferences::UserPreferences, user_profiles::UserProfiles},
+    utils::is_dev,
+};
+
 mod preferences_queries;
+mod user_profiles_queries;
 
 pub const DB_FILENAME: &str = "voicerelay.db";
 pub const DB_CONNECTION: &str = "sqlite:voicerelay.db";
-const USER_PREFERENCES: &str = include_str!("migrations/000_schema.sql");
+const USER_SCHEMA: &str = include_str!("migrations/000_schema.sql");
+const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000000";
+const DEV_USER_NAME: &str = "dev";
+const DEV_USER_EMAIL: &str = "dev@example.com";
 
 pub struct DataBase {
     pool: SqlitePool,
@@ -34,8 +43,8 @@ fn database_url(app: &tauri::AppHandle) -> Result<String> {
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![tauri_plugin_sql::Migration {
         version: 1,
-        description: "create user preferences table",
-        sql: USER_PREFERENCES,
+        description: "create user preferences and user profiles table",
+        sql: USER_SCHEMA,
         kind: tauri_plugin_sql::MigrationKind::Up,
     }]
 }
@@ -49,6 +58,32 @@ impl DataBase {
                 .await
         })?;
         info!("Database initialized");
-        Ok(DataBase { pool })
+
+        let ret = DataBase { pool };
+
+        // create dev user
+        if is_dev() {
+            tauri::async_runtime::block_on(async {
+                if let Some(_) = ret.fetch_user_profiles(DEV_USER_ID).await.unwrap() {
+                    // dev user already exists
+                    return;
+                }
+                ret.insert_user_profiles(&UserProfiles {
+                    user_id: DEV_USER_ID.into(),
+                    user_name: DEV_USER_NAME.into(),
+                    email: DEV_USER_EMAIL.into(),
+                })
+                .await
+                .unwrap_or_else(|e| log::warn!("Failed to create dev user: {}", e));
+                ret.insert_user_preferences(&UserPreferences {
+                    user_id: DEV_USER_ID.into(),
+                    is_sidebar_open: true,
+                })
+                .await
+                .unwrap_or_else(|e| log::warn!("Failed to create dev preferences: {}", e));
+            });
+        }
+
+        Ok(ret)
     }
 }

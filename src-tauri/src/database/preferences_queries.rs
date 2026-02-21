@@ -10,10 +10,7 @@ impl DataBase {
             .await?;
 
         match row {
-            Some(row) => Ok(Some(UserPreferences {
-                user_id: row.get("user_id"),
-                is_sidebar_open: row.get("is_sidebar_open"),
-            })),
+            Some(row) => Ok(Some(UserPreferences::from(row))),
             None => Ok(None),
         }
     }

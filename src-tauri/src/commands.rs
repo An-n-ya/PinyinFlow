@@ -5,7 +5,9 @@ use tauri::{ipc::Channel, State};
 use tokio::sync::Mutex;
 
 use crate::{
+    database::DataBase,
     device::websocket::WsClient,
+    domain::preferences::UserPreferences,
     service::llm::{
         domain::TaskType,
         service::LlmService,
@@ -112,5 +114,14 @@ pub async fn complete_message(
         .await
         .unwrap();
     log::info!("complete_message: {input}");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_user_preferences(
+    state: State<'_, DataBase>,
+    pref: UserPreferences,
+) -> TAResult<()> {
+    state.update_user_preferences(&pref).await?;
     Ok(())
 }
