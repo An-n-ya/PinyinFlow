@@ -8,7 +8,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { CuboidIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { KeyboardEvent, useRef, useState } from 'react';
 
 interface InputAreaProps {
     onSendMessage: (text: string) => void;
@@ -34,7 +34,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         setInput('');
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Tab' && suggestion) {
             e.preventDefault();
             setInput(input + suggestion.join(''));
