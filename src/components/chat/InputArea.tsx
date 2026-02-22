@@ -8,7 +8,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { CuboidIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 
 interface InputAreaProps {
     onSendMessage: (text: string) => void;
@@ -21,7 +21,7 @@ type ReplyCompleteEvent =
       }
     | { event: 'content'; data: string };
 
-export function InputArea({ onSendMessage }: InputAreaProps) {
+export const InputArea = memo(function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
     const [suggestion, setSuggestion] = useState(['a', 'b', 'c'] as string[]);
     const timeoutRef = useRef<NodeJS.Timeout>(null);
@@ -96,4 +96,4 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
             </PromptInput>
         </>
     );
-}
+});
