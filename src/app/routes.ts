@@ -21,7 +21,16 @@ export const router = createBrowserRouter([
                 },
                 Component: ChatPage,
             },
-            { path: 'settings', Component: Settings },
+            {
+                path: 'settings',
+                loader: async () => {
+                    if (!getAppState().logged_in) {
+                        await refreshCurrentUser();
+                    }
+                    return null;
+                },
+                Component: Settings,
+            },
             {
                 path: 'login',
                 loader: async () => {

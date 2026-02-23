@@ -1,6 +1,5 @@
 use crate::{database::DataBase, domain::preferences::UserPreferences};
 use anyhow::Result;
-use sqlx::Row;
 
 impl DataBase {
     pub async fn fetch_user_preferences(&self, user_id: &str) -> Result<Option<UserPreferences>> {

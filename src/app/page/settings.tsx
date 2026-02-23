@@ -24,7 +24,7 @@ import React, { useState } from 'react';
 type Switcher = {
     type: 'switcher';
     name: string;
-    defaultChecked: boolean;
+    defaultChecked: () => boolean;
     action?: (checked: boolean) => void;
 };
 type DropDown = {
@@ -58,7 +58,7 @@ const nav: navItem[] = [
                     {
                         type: 'switcher',
                         name: '启用暗黑模式',
-                        defaultChecked: false,
+                        defaultChecked: () => false,
                         action: checked => {
                             console.log(checked);
                         },
@@ -77,7 +77,7 @@ const nav: navItem[] = [
                     {
                         type: 'switcher',
                         name: '会话补全',
-                        defaultChecked: getAppState().pref.enableCompleteInput,
+                        defaultChecked: () => getAppState().pref.enableCompleteInput,
                         action: async checked => {
                             console.info(`pref: ${JSON.stringify(getAppState().pref)}`);
                             produceAppState(draft => {
@@ -126,7 +126,7 @@ function SettingItem({ item, key }: SetttingItemProps) {
                 <div className="flex items-center justify-between gap-3">
                     <Label htmlFor={item.name}>{item.name}</Label>
                     <Switch
-                        defaultChecked={item.defaultChecked}
+                        defaultChecked={item.defaultChecked()}
                         id={item.name}
                         onCheckedChange={item.action}
                     />
