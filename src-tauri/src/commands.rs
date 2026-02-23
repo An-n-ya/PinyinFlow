@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 use crate::{
     database::DataBase,
     device::websocket::WsClient,
-    domain::preferences::UserPreferences,
+    domain::{preferences::UserPreferences, user_profiles::UserProfiles},
     service::llm::{
         domain::TaskType,
         service::LlmService,
@@ -122,6 +122,25 @@ pub async fn update_user_preferences(
     state: State<'_, DataBase>,
     pref: UserPreferences,
 ) -> TAResult<()> {
+    log::info!("update_user_preferences {:?}", pref);
     state.update_user_preferences(&pref).await?;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn fetch_user_preferences(
+    state: State<'_, DataBase>,
+    user_id: String,
+) -> TAResult<Option<UserPreferences>> {
+    let ret = state.fetch_user_preferences(&user_id).await?;
+    Ok(ret)
+}
+
+#[tauri::command]
+pub async fn fetch_user_profiles(
+    state: State<'_, DataBase>,
+    user_id: String,
+) -> TAResult<Option<UserProfiles>> {
+    let ret = state.fetch_user_profiles(&user_id).await?;
+    Ok(ret)
 }

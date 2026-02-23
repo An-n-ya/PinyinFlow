@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
 use sqlx::sqlite::SqliteRow;
 use sqlx::Row;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UserProfiles {
     pub user_id: String,
     pub user_name: String,

@@ -9,7 +9,10 @@ use std::path::Path;
 
 use tokio::sync::Mutex;
 
-use crate::commands::{complete_message, play, proofread, split, tone, update_user_preferences};
+use crate::commands::{
+    complete_message, fetch_user_preferences, fetch_user_profiles, play, proofread, split, tone,
+    update_user_preferences,
+};
 use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
@@ -67,7 +70,7 @@ pub fn run() {
         .setup(|app| {
             log::info!("setup started");
             // FIXME: ensure env file local path
-            dotenvy::from_path(Path::new("../.env.dev.local")).unwrap();
+            dotenvy::from_path(Path::new("../.env.local")).unwrap();
             let ws_client = WsClient::init("ws://localhost:8000/play")?;
             FClient::init(app.handle().clone());
             AudioDevice::init(app.handle().clone())?;
@@ -84,6 +87,8 @@ pub fn run() {
             play,
             proofread,
             complete_message,
+            fetch_user_preferences,
+            fetch_user_profiles,
             update_user_preferences
         ])
         .run(tauri::generate_context!())

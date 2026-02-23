@@ -1,3 +1,4 @@
+import { updatePreferences } from '@/actions/user.action';
 import {
     Sidebar,
     SidebarContent,
@@ -6,15 +7,19 @@ import {
     SidebarHeader,
     useSidebar,
 } from '@/components/ui/sidebar';
-import { getAppState } from '@/lib/store';
+import { produceAppState } from '@/lib/store';
 import { useEffect } from 'react';
 import { MyHeader } from './header/my';
 
 export function AppSidebar() {
-    const { setOpen } = useSidebar();
+    const { open } = useSidebar();
     useEffect(() => {
-        setOpen(getAppState().pref.isSidebarOpen);
-    }, []);
+        produceAppState(draft => {
+            draft.pref.isSidebarOpen = open;
+        });
+        updatePreferences();
+        console.info(`AppSidebar is changing: open=${open}`);
+    }, [open]);
     return (
         <Sidebar>
             <SidebarHeader>

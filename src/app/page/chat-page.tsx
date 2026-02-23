@@ -3,10 +3,11 @@ import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { getAppState } from '@/lib/store';
 
 export function ChatPage() {
     return (
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={getAppState().pref.isSidebarOpen}>
             <TooltipProvider>
                 <AppSidebar />
                 <SidebarInset className="min-h-screen bg-slate-50">

@@ -3,6 +3,7 @@ use sqlx::sqlite::SqliteRow;
 use sqlx::Row;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UserPreferences {
     pub user_id: String,
     pub is_sidebar_open: bool,
