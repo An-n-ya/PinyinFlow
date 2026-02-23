@@ -38,3 +38,15 @@ pnpm test                  # 运行测试
 - **错误处理**: Rust 后端优先使用 `anyhow` 和 `anyhow-tauri` 进行错误包装。
 - **状态同步**: 前端通过 `listen` 监听后端发送的音频播放状态事件，以同步 UI 表现。
 - **代码风格**: 使用 `pnpm format` 进行代码格式化，且代码中不应包含注释。
+
+
+## 增加 Settings/Preferences 的步骤
+后端部分
+- `src-tauri/src`：
+    - `database`:
+        - `migrations/000_sschema.sql`: 增加新的字段。
+        - `mod.rs`: 更新 update 和 insert 方法 SQL 语句。
+    - `domin/preference.rs`: 更新结构体，增加新的字段。
+前端部分
+- `app/page`: UI 配置部分
+- `state/preference.state.ts`: 更新状态管理部分

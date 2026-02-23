@@ -6,6 +6,7 @@ import {
     PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { getAppState } from '@/lib/store';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { CuboidIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -45,7 +46,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         // clear suggestion
         setSuggestion([]);
 
-        if (e.key !== 'Escape') {
+        if (getAppState().pref.enableCompleteInput && e.key !== 'Escape') {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(async () => {
                 const onEvent = new Channel<ReplyCompleteEvent>();

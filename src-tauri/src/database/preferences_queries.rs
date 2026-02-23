@@ -17,19 +17,21 @@ impl DataBase {
 
     pub async fn insert_user_preferences(&self, preferences: &UserPreferences) -> Result<()> {
         sqlx::query(
-            "INSERT OR REPLACE INTO user_preferences (user_id, is_sidebar_open) VALUES ($1, $2)",
+            "INSERT OR REPLACE INTO user_preferences (user_id, is_sidebar_open, enable_complete_input) VALUES ($1, $2, $3)",
         )
         .bind(&preferences.user_id)
         .bind(preferences.is_sidebar_open)
+        .bind(preferences.enable_complete_input)
         .execute(&self.pool)
         .await?;
         Ok(())
     }
 
     pub async fn update_user_preferences(&self, preferences: &UserPreferences) -> Result<()> {
-        sqlx::query("UPDATE user_preferences SET is_sidebar_open = $2 WHERE user_id = $1")
+        sqlx::query("UPDATE user_preferences SET is_sidebar_open = $2, enable_complete_input = $3 WHERE user_id = $1")
             .bind(&preferences.user_id)
             .bind(preferences.is_sidebar_open)
+            .bind(preferences.enable_complete_input)
             .execute(&self.pool)
             .await?;
         Ok(())

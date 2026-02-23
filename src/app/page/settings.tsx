@@ -1,3 +1,4 @@
+import { updatePreferences } from '@/actions/user.action';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -13,6 +14,7 @@ import {
     SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
+import { getAppState, produceAppState } from '@/lib/store';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { X } from 'lucide-react';
 
@@ -22,6 +24,7 @@ import React, { useState } from 'react';
 type Switcher = {
     type: 'switcher';
     name: string;
+    defaultChecked: boolean;
     action?: (checked: boolean) => void;
 };
 type DropDown = {
@@ -55,6 +58,7 @@ const nav: navItem[] = [
                     {
                         type: 'switcher',
                         name: '启用暗黑模式',
+                        defaultChecked: false,
                         action: checked => {
                             console.log(checked);
                         },
@@ -63,6 +67,25 @@ const nav: navItem[] = [
                         type: 'radio',
                         options: ['跟随系统', '浅色', '深色'],
                         default: '跟随系统',
+                    },
+                ],
+            },
+            {
+                name: '会话辅助',
+                icon: 'bot',
+                settings: [
+                    {
+                        type: 'switcher',
+                        name: '会话补全',
+                        defaultChecked: getAppState().pref.enableCompleteInput,
+                        action: async checked => {
+                            console.info(`pref: ${JSON.stringify(getAppState().pref)}`);
+                            produceAppState(draft => {
+                                draft.pref.enableCompleteInput = checked;
+                            });
+                            await updatePreferences();
+                            await getCurrentWebviewWindow().emitTo('main', 'settings-change', {});
+                        },
                     },
                 ],
             },
@@ -102,7 +125,11 @@ function SettingItem({ item, key }: SetttingItemProps) {
             node = (
                 <div className="flex items-center justify-between gap-3">
                     <Label htmlFor={item.name}>{item.name}</Label>
-                    <Switch id={item.name} onCheckedChange={item.action} />
+                    <Switch
+                        defaultChecked={item.defaultChecked}
+                        id={item.name}
+                        onCheckedChange={item.action}
+                    />
                 </div>
             );
             break;

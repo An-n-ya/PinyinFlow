@@ -35,5 +35,5 @@ export const refreshCurrentUser = async (): Promise<void> => {
 
 export const updatePreferences = async (): Promise<void> => {
     console.info('updaing user preferences');
-    invoke('update_user_preferences', { pref: getAppState().pref });
+    await invoke('update_user_preferences', { pref: getAppState().pref });
 };
