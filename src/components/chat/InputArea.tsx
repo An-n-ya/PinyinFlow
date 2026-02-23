@@ -31,7 +31,8 @@ const notTypingKey = [
     'ArrowDown',
     'Backspace',
     'Enter',
-    'Unidentified',
+    'Super',
+    'Delete',
 ];
 export function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
