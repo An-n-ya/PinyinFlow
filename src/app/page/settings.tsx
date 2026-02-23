@@ -83,8 +83,6 @@ const nav: navItem[] = [
                             produceAppState(draft => {
                                 draft.pref.enableCompleteInput = checked;
                             });
-                            await updatePreferences();
-                            await getCurrentWebviewWindow().emitTo('main', 'settings-change', {});
                         },
                     },
                 ],
@@ -102,6 +100,12 @@ const nav: navItem[] = [
 interface SetttingItemProps {
     item: settingItem;
     key: string;
+}
+
+async function updateSettings(event: any, action: CallableFunction) {
+    await action(event);
+    await updatePreferences();
+    await getCurrentWebviewWindow().emitTo('main', 'settings-change', {});
 }
 function SettingItem({ item, key }: SetttingItemProps) {
     let node;
@@ -128,7 +132,9 @@ function SettingItem({ item, key }: SetttingItemProps) {
                     <Switch
                         defaultChecked={item.defaultChecked()}
                         id={item.name}
-                        onCheckedChange={item.action}
+                        onCheckedChange={async e =>
+                            await updateSettings(e, item.action as CallableFunction)
+                        }
                     />
                 </div>
             );
