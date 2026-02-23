@@ -34,6 +34,7 @@ const menu_items: MenuItem[] = [
     },
 ];
 
+import { getAppState } from '@/lib/store';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 function new_window(window_id: string) {
@@ -76,7 +77,7 @@ export function MyHeader() {
                                 <AudioLines className="size-4" />
                             </div>
                             <div className="flex flex-col gap-0.5 leading-none">
-                                <span className="font-medium">VoiceRelay</span>
+                                <span className="font-medium">{getAppState().user.userName}</span>
                                 <span className="">v0.0.1</span>
                             </div>
                         </SidebarMenuButton>

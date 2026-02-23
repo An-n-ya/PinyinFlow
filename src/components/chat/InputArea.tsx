@@ -22,9 +22,20 @@ type ReplyCompleteEvent =
       }
     | { event: 'content'; data: string };
 
+const notTypingKey = [
+    'Escape',
+    'Tab',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Backspace',
+    'Enter',
+    'Unidentified',
+];
 export function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
-    const [suggestion, setSuggestion] = useState(['a', 'b', 'c'] as string[]);
+    const [suggestion, setSuggestion] = useState([] as string[]);
     const timeoutRef = useRef<NodeJS.Timeout>(null);
 
     const handleSend = () => {
@@ -46,8 +57,13 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         // clear suggestion
         setSuggestion([]);
 
-        if (getAppState().pref.enableCompleteInput && e.key !== 'Escape') {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (
+            getAppState().pref.enableCompleteInput &&
+            input.length > 0 &&
+            !notTypingKey.find(value => value === e.key)
+        ) {
+            console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
                 const onEvent = new Channel<ReplyCompleteEvent>();
                 onEvent.onmessage = message => {
@@ -59,7 +75,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                 };
 
                 await invoke('complete_message', {
-                    input: '你是谁',
+                    input: input,
                     onEvent,
                 });
             }, 500);
