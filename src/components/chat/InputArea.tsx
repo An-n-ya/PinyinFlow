@@ -89,7 +89,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                 <PromptInputTextarea
                     suggestion={suggestion}
                     value={input}
-                    placeholder="请输入拼音..."
+                    placeholder="请输入..."
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="h-40 pr-12"

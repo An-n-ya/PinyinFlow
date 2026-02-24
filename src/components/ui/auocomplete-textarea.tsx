@@ -1,80 +1,25 @@
 import { motion } from 'motion/react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 
 const AutocompleteTextarea = ({ className, suggestion, ...props }: AutocompleteTextareaProps) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // const fullResponse = '这是一个模拟的流式响应...\n它可以分段显示文字，\n就像真实的 AI 一样。';
+    function autoResizeTextarea() {
+        textareaRef.current?.setAttribute(
+            'style',
+            `height: ${textareaRef.current.scrollHeight}px;`
+        );
+    }
 
-    // const startSimulation = () => {
-    //     setSuggestion([]);
-    //     setIsStreaming(true);
-    //     if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
-
-    //     let charIndex = 0;
-
-    //     streamIntervalRef.current = setInterval(() => {
-    //         if (charIndex < fullResponse.length) {
-    //             const nextChar = fullResponse[charIndex];
-
-    //             setSuggestion(prev => prev.concat([nextChar]));
-    //             charIndex++;
-    //         } else {
-    //             stopSimulation();
-    //         }
-    //     }, 100);
-    // };
-
-    // const stopSimulation = () => {
-    //     if (streamIntervalRef.current) {
-    //         clearInterval(streamIntervalRef.current);
-    //         streamIntervalRef.current = null;
-    //     }
-    //     setIsStreaming(false);
-    // };
-
-    // // 组件卸载时清理定时器
-    // useEffect(() => {
-    //     return () => stopSimulation();
-    // }, []);
-
-    // const handleInputWrap = e => {
-    //     const value = e.target.value;
-    //     setInput(value);
-
-    //     if (value.endsWith('如何')) {
-    //         setSuggestion(
-    //             '快速实现补全功能这是一个恨恨恨恶化讷河蔫儿坏蔫儿坏嗯嗯别长的字符串，它换行是否正确？？'
-    //         );
-    //     } else {
-    //         setSuggestion([]);
-    //     }
-
-    //     onInput(e);
-    // };
-
-    // const handleKeyDownWrap = e => {
-    //     if (e.key === 'Tab' && suggestion) {
-    //         e.preventDefault();
-    //         setInput(input + suggestion);
-    //         setSuggestion('');
-    //     }
-    //     onKeyDown(e);
-    // };
-
-    // FIXME: sync overlay to textarea on scroll
-    // const handleScroll = e => {
-    //     if (overlayRef.current) {
-    //         overlayRef.current.scrollTop = e.target.scrollTop;
-    //     }
-    //     const handleScroll = e => {
-    //         if (overlayRef.current) {
-    //             overlayRef.current.scrollTop = e.target.scrollTop;
-    //         }
-    //     };
-    // };
+    useEffect(() => {
+        autoResizeTextarea();
+        textareaRef.current?.addEventListener('input', autoResizeTextarea);
+        return () => {
+            textareaRef.current?.removeEventListener('input', autoResizeTextarea);
+        };
+    });
 
     return (
         <div className="relative w-full">
@@ -103,7 +48,7 @@ const AutocompleteTextarea = ({ className, suggestion, ...props }: AutocompleteT
                 ref={textareaRef}
                 data-slot="textarea"
                 className={cn(
-                    'border-input placeholder:text-muted-foreground aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full resize-none rounded-md border border-transparent bg-transparent px-3 py-2 text-base shadow-xs shadow-transparent transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                    'placeholder:text-muted-foreground aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full resize-none overflow-hidden rounded-md border border-transparent bg-transparent px-3 py-2 text-base shadow-xs shadow-transparent transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                     className
                 )}
                 {...props}
