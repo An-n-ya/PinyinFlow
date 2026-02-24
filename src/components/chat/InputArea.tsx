@@ -65,6 +65,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
             !notTypingKey.find(value => value === e.key)
         ) {
             console.info(`setting timeout key:${e.key}`);
+
             timeoutRef.current = setTimeout(async () => {
                 const onEvent = new Channel<ReplyCompleteEvent>();
                 onEvent.onmessage = message => {
