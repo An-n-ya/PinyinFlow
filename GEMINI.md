@@ -13,7 +13,7 @@ PinyinFlow 是一个跨平台的 text-to-voice 无障碍工具，旨在帮助发
 ./scripts/run.sh -s        # 启动本地语音合成服务
 ./scripts/run.sh -r        # 启动 Tauri 桌面应用
 ./scripts/log.sh -l        # 启动 lnav 日志查看器
-pnpm format                # 格式化代码
+pnpm format:check          # 检查代码格式
 pnpm test                  # 运行测试
 ```
 

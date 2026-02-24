@@ -30,6 +30,9 @@
 - [ ] introduce MCP support
   
 ## add switch to toggle complete function
-- [ ] introduce zustand to mange state
-- [ ] introduce sql to persist user's preference
+- [x] introduce zustand to mange state
+- [x] introduce sql to persist user's preference
 - [x] add a setting page (support router)
+  
+## debugging
+- [ ] recording every llm query(latency, content, provider, time) to sql database
