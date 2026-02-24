@@ -118,6 +118,15 @@ pub async fn complete_message(
 }
 
 #[tauri::command]
+pub async fn update_user_profiles(
+    state: State<'_, DataBase>,
+    profile: UserProfiles,
+) -> TAResult<()> {
+    log::info!("update_user_profiles {:?}", profile);
+    state.update_user_profiles(&profile).await?;
+    Ok(())
+}
+#[tauri::command]
 pub async fn update_user_preferences(
     state: State<'_, DataBase>,
     pref: UserPreferences,

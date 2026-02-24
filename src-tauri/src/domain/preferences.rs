@@ -1,23 +1,27 @@
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::SqliteRow;
-use sqlx::Row;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct UserPreferences {
-    pub user_id: String,
-    pub is_sidebar_open: bool,
-    pub enable_complete_input: bool,
-    pub enable_proofread: bool,
+macro_rules! define_preferences {
+    ($($name:ident : $type:ty = $default:expr),* $(,)?) => {
+        #[derive(Serialize, Deserialize, Debug, Clone, sqlx::FromRow)]
+        #[serde(rename_all = "camelCase")]
+        pub struct UserPreferences {
+            pub user_id: String,
+            $(pub $name: $type,)*
+        }
+
+        impl UserPreferences {
+            pub fn dev(user_id: &str) -> Self {
+                Self {
+                    user_id: user_id.to_string(),
+                    $($name: $default,)*
+                }
+            }
+        }
+    };
 }
 
-impl From<SqliteRow> for UserPreferences {
-    fn from(row: SqliteRow) -> Self {
-        UserPreferences {
-            user_id: row.get("user_id"),
-            is_sidebar_open: row.get("is_sidebar_open"),
-            enable_complete_input: row.get("enable_complete_input"),
-            enable_proofread: row.get("enable_proofread"),
-        }
-    }
+define_preferences! {
+    is_sidebar_open: bool = true,
+    enable_complete_input: bool = true,
+    enable_proofread: bool = true,
 }

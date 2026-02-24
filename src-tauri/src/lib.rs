@@ -11,7 +11,7 @@ use tokio::sync::Mutex;
 
 use crate::commands::{
     complete_message, fetch_user_preferences, fetch_user_profiles, play, proofread, split, tone,
-    update_user_preferences,
+    update_user_preferences, update_user_profiles,
 };
 use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
@@ -89,7 +89,8 @@ pub fn run() {
             complete_message,
             fetch_user_preferences,
             fetch_user_profiles,
-            update_user_preferences
+            update_user_preferences,
+            update_user_profiles
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
