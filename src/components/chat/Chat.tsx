@@ -1,3 +1,4 @@
+import { getAppState } from '@/lib/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
@@ -46,8 +47,11 @@ export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
     async function play(id: string, input: string) {
         try {
-            let revised_input = await invoke('proofread', { id, input });
-            await invoke('play', { id, input: revised_input });
+            let final_input = input;
+            if (getAppState().pref.enableProofread) {
+                final_input = (await invoke('proofread', { id, input })) as string;
+            }
+            await invoke('play', { id, input: final_input });
         } catch (error_msg) {
             console.error(error_msg);
         }

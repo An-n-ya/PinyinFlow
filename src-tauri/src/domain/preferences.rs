@@ -8,6 +8,7 @@ pub struct UserPreferences {
     pub user_id: String,
     pub is_sidebar_open: bool,
     pub enable_complete_input: bool,
+    pub enable_proofread: bool,
 }
 
 impl From<SqliteRow> for UserPreferences {
@@ -16,6 +17,7 @@ impl From<SqliteRow> for UserPreferences {
             user_id: row.get("user_id"),
             is_sidebar_open: row.get("is_sidebar_open"),
             enable_complete_input: row.get("enable_complete_input"),
+            enable_proofread: row.get("enable_proofread"),
         }
     }
 }

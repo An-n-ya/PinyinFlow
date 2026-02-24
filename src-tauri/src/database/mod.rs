@@ -79,6 +79,7 @@ impl DataBase {
                     user_id: DEV_USER_ID.into(),
                     is_sidebar_open: true,
                     enable_complete_input: true,
+                    enable_proofread: true,
                 })
                 .await
                 .unwrap_or_else(|e| log::warn!("Failed to create dev preferences: {}", e));

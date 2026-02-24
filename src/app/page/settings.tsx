@@ -85,6 +85,16 @@ const nav: navItem[] = [
                             });
                         },
                     },
+                    {
+                        type: 'switcher',
+                        name: '句子润色',
+                        defaultChecked: () => getAppState().pref.enableProofread,
+                        action: async checked => {
+                            produceAppState(draft => {
+                                draft.pref.enableProofread = checked;
+                            });
+                        },
+                    },
                 ],
             },
             { name: '消息', icon: 'message-circle' },

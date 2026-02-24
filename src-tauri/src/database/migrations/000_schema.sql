@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE TABLE IF NOT EXISTS user_preferences (
     user_id TEXT PRIMARY KEY,
     is_sidebar_open BOOLEAN NOT NULL DEFAULT TRUE,
-    enable_complete_input BOOLEAN NOT NULL DEFAULT TRUE
+    enable_complete_input BOOLEAN NOT NULL DEFAULT TRUE,
+    enable_proofread BOOLEAN NOT NULL DEFAULT TRUE
 );
