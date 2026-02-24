@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     database::DataBase,
-    device::websocket::WsClient,
+    device::tts::WsClient,
     domain::{preferences::UserPreferences, user_profiles::UserProfiles},
     service::llm::{
         domain::TaskType,

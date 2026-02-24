@@ -27,7 +27,7 @@ const RECONNECT_DELAY_SECS: u64 = 2;
 
 // TODO: WsEvent::Binary should contains a struct that can unpack and distribute
 #[derive(Clone)]
-pub enum WsEvent {
+pub enum TTSEvent {
     Disconnected,
     Connected,
     Text(String),
@@ -38,7 +38,7 @@ pub enum WsEvent {
 
 #[derive(Clone)]
 pub struct WsClient {
-    event_tx: broadcast::Sender<WsEvent>,
+    event_tx: broadcast::Sender<TTSEvent>,
 }
 
 impl WsClient {
@@ -61,13 +61,13 @@ impl WsClient {
                         continue;
                     }
                 };
-                broadcast_event(&event_tx_inner, WsEvent::Connected);
+                broadcast_event(&event_tx_inner, TTSEvent::Connected);
                 log::info!("WebSocket connected");
 
                 let disconnected = run_message_loop(&mut websocket, &event_tx_inner, &mut rx).await;
 
                 if disconnected {
-                    broadcast_event(&event_tx_inner, WsEvent::Disconnected);
+                    broadcast_event(&event_tx_inner, TTSEvent::Disconnected);
                     log::warn!(
                         "WebSocket disconnected, reconnecting in {}s...",
                         RECONNECT_DELAY_SECS
@@ -85,7 +85,7 @@ impl WsClient {
         Ok(client)
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<WsEvent> {
+    pub fn subscribe(&self) -> broadcast::Receiver<TTSEvent> {
         self.event_tx.subscribe()
     }
     /// Send text message to the server
@@ -97,7 +97,7 @@ impl WsClient {
 }
 
 /// Broadcast event to subscribers; log at trace level when there are no subscribers
-fn broadcast_event(tx: &broadcast::Sender<WsEvent>, event: WsEvent) {
+fn broadcast_event(tx: &broadcast::Sender<TTSEvent>, event: TTSEvent) {
     if tx.send(event).is_err() {
         log::trace!("no subscribers, event not delivered");
     }
@@ -113,7 +113,7 @@ async fn connect(client: &Client, url: &str) -> Result<WebSocket> {
 /// Run message loop until disconnected. Returns true when exited due to disconnect (reconnect needed).
 async fn run_message_loop(
     websocket: &mut WebSocket,
-    event_tx: &broadcast::Sender<WsEvent>,
+    event_tx: &broadcast::Sender<TTSEvent>,
     rx: &mut mpsc::UnboundedReceiver<Message>,
 ) -> bool {
     loop {
@@ -129,14 +129,14 @@ async fn run_message_loop(
                                 }
                             }
                             Message::Text(text) => {
-                                broadcast_event(event_tx, WsEvent::Text(text));
+                                broadcast_event(event_tx, TTSEvent::Text(text));
                             }
                             Message::Binary(bytes) => {
                                 broadcast_event(event_tx, distribute_binary_data(&bytes));
                             }
                             Message::Close { code, reason } => {
                                 log::info!("server closed connection {} - {}", code, reason);
-                                broadcast_event(event_tx, WsEvent::Close(code.into(), reason));
+                                broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
                                 return true;
                             }
                             _ => {}
@@ -159,15 +159,15 @@ async fn run_message_loop(
     }
 }
 
-fn distribute_binary_data(data: &[u8]) -> WsEvent {
+fn distribute_binary_data(data: &[u8]) -> TTSEvent {
     if let Ok(event) = unpack_pcm_data(data) {
         return event;
     }
     log::error!("Failed to unpack binary data");
-    WsEvent::Binary(data.to_vec())
+    TTSEvent::Binary(data.to_vec())
 }
 
-fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
+fn unpack_pcm_data(data: &[u8]) -> Result<TTSEvent> {
     ensure!(data.len() > 36);
     let magic_bytes = &data[0..20];
     let binding = String::from_utf8(magic_bytes.to_vec()).unwrap();
@@ -182,7 +182,7 @@ fn unpack_pcm_data(data: &[u8]) -> Result<WsEvent> {
             });
 
             let pcm_data = data[24..].to_vec();
-            return Ok(WsEvent::Play(PlayResond { data: pcm_data, id }));
+            return Ok(TTSEvent::Play(PlayResond { data: pcm_data, id }));
         }
         _ => {
             bail!("unsupported magic {magic}")

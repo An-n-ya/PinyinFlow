@@ -16,7 +16,7 @@ use crate::commands::{
 use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
-use crate::device::websocket::WsClient;
+use crate::device::tts::WsClient;
 use crate::service::llm::service::LlmService;
 use chrono::Local;
 use tauri::Manager;

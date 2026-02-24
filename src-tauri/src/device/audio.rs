@@ -2,7 +2,7 @@ use crate::{
     commands::PlayResond,
     device::{
         frontend::{FClient, FEvent},
-        websocket::{WsClient, WsEvent},
+        tts::{TTSEvent, WsClient},
     },
 };
 use anyhow::Result;
@@ -59,7 +59,7 @@ impl AudioDevice {
             let mut receiver = ws_client_clone.subscribe();
             while let Ok(event) = receiver.recv().await {
                 match event {
-                    WsEvent::Play(res) => {
+                    TTSEvent::Play(res) => {
                         Self::play_pcm_bytes(&res);
                     }
                     _ => {}
