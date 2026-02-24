@@ -45,7 +45,6 @@ pnpm test                  # 运行测试
 - `src-tauri/src`：
     - `database`:
         - `migrations/000_sschema.sql`: 增加新的字段。
-        - `mod.rs`: 更新 update 和 insert 方法 SQL 语句。
     - `domin/preference.rs`: 更新结构体，增加新的字段。
 前端部分
 - `app/page`: UI 配置部分

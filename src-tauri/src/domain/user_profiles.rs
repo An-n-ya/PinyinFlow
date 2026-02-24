@@ -1,11 +1,12 @@
-use serde::{Deserialize, Serialize};
-use sqlx::sqlite::SqliteRow;
-use sqlx::Row;
+const DEV_USER_NAME: &str = "dev";
+const DEV_USER_EMAIL: &str = "dev@example.com";
 
-#[derive(Serialize, Deserialize, Debug, Clone, sqlx::FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct UserProfiles {
-    pub user_id: String,
-    pub user_name: String,
-    pub email: String,
+crate::domain::define_domain! {
+    UserProfiles,
+    "user_profiles",
+    user_profiles,
+    {
+        user_name: String = DEV_USER_NAME.to_string(),
+        email: String = DEV_USER_EMAIL.to_string(),
+    }
 }

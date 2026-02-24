@@ -1,5 +1,6 @@
 use anyhow::Result;
 use anyhow_tauri::TAResult;
+use paste::paste;
 use serde::{Deserialize, Serialize};
 use tauri::{ipc::Channel, State};
 use tokio::sync::Mutex;
@@ -17,6 +18,32 @@ use crate::{
         },
     },
 };
+
+// 定义 CRUD 命令宏
+macro_rules! define_crud_commands {
+    ($struct_type:ty, $name:ident) => {
+        paste::paste! {
+            #[tauri::command]
+            pub async fn [<update_ $name>](
+                state: State<'_, DataBase>,
+                item: $struct_type,
+            ) -> TAResult<()> {
+                log::info!(concat!("update_", stringify!($name), " {:?}"), item);
+                state.[<update_ $name>](&item).await?;
+                Ok(())
+            }
+
+            #[tauri::command]
+            pub async fn [<fetch_ $name>](
+                state: State<'_, DataBase>,
+                user_id: String,
+            ) -> TAResult<Option<$struct_type>> {
+                let ret = state.[<fetch_ $name>](&user_id).await?;
+                Ok(ret)
+            }
+        }
+    };
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PlayResond {
@@ -117,39 +144,6 @@ pub async fn complete_message(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn update_user_profiles(
-    state: State<'_, DataBase>,
-    profile: UserProfiles,
-) -> TAResult<()> {
-    log::info!("update_user_profiles {:?}", profile);
-    state.update_user_profiles(&profile).await?;
-    Ok(())
-}
-#[tauri::command]
-pub async fn update_user_preferences(
-    state: State<'_, DataBase>,
-    pref: UserPreferences,
-) -> TAResult<()> {
-    log::info!("update_user_preferences {:?}", pref);
-    state.update_user_preferences(&pref).await?;
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn fetch_user_preferences(
-    state: State<'_, DataBase>,
-    user_id: String,
-) -> TAResult<Option<UserPreferences>> {
-    let ret = state.fetch_user_preferences(&user_id).await?;
-    Ok(ret)
-}
-
-#[tauri::command]
-pub async fn fetch_user_profiles(
-    state: State<'_, DataBase>,
-    user_id: String,
-) -> TAResult<Option<UserProfiles>> {
-    let ret = state.fetch_user_profiles(&user_id).await?;
-    Ok(ret)
-}
+// 使用宏生成 CRUD 命令
+define_crud_commands!(UserProfiles, user_profiles);
+define_crud_commands!(UserPreferences, user_preferences);

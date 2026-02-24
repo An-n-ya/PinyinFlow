@@ -10,11 +10,8 @@ use crate::{
     utils::is_dev,
 };
 
-pub mod preferences_queries;
-pub mod user_profiles_queries;
-
 pub struct DataBase {
-    pool: SqlitePool,
+    pub pool: SqlitePool,
 }
 
 macro_rules! impl_crud {
@@ -89,8 +86,6 @@ pub const DB_FILENAME: &str = "voicerelay.db";
 pub const DB_CONNECTION: &str = "sqlite:voicerelay.db";
 const USER_SCHEMA: &str = include_str!("migrations/000_schema.sql");
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000000";
-const DEV_USER_NAME: &str = "dev";
-const DEV_USER_EMAIL: &str = "dev@example.com";
 
 fn database_path(app: &tauri::AppHandle) -> Result<PathBuf> {
     let mut path = app.path().app_config_dir()?;
@@ -136,13 +131,9 @@ impl DataBase {
                     // dev user already exists
                     return;
                 }
-                ret.insert_user_profiles(&UserProfiles {
-                    user_id: DEV_USER_ID.into(),
-                    user_name: DEV_USER_NAME.into(),
-                    email: DEV_USER_EMAIL.into(),
-                })
-                .await
-                .unwrap_or_else(|e| log::warn!("Failed to create dev user: {}", e));
+                ret.insert_user_profiles(&UserProfiles::dev(DEV_USER_ID))
+                    .await
+                    .unwrap_or_else(|e| log::warn!("Failed to create dev user: {}", e));
                 ret.insert_user_preferences(&UserPreferences::dev(DEV_USER_ID))
                     .await
                     .unwrap_or_else(|e| log::warn!("Failed to create dev preferences: {}", e));

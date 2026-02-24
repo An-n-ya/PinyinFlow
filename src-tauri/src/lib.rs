@@ -87,10 +87,10 @@ pub fn run() {
             play,
             proofread,
             complete_message,
-            fetch_user_preferences,
+            update_user_profiles,
             fetch_user_profiles,
             update_user_preferences,
-            update_user_profiles
+            fetch_user_preferences
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
