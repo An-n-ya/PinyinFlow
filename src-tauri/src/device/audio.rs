@@ -31,19 +31,18 @@ impl AudioDevice {
             .set(tx)
             .map_err(|_| anyhow::anyhow!("already initialized"))?;
         std::thread::spawn(move || {
-            for request in rx {
-                let stream_handle = rodio::OutputStreamBuilder::open_default_stream()
-                    .expect("open default audio stream");
+            let stream_handle = rodio::OutputStreamBuilder::open_default_stream()
+                .expect("open default audio stream");
+            let sink = rodio::Sink::connect_new(&stream_handle.mixer());
+            loop {
+                let request = rx.recv().unwrap();
                 match request {
                     AudioRequest::Play {
                         data: pcm_bytes,
                         id,
                     } => {
-                        let sink = rodio::Sink::connect_new(&stream_handle.mixer());
                         let source = Self::pcm_bytes_to_source(&pcm_bytes);
                         sink.append(source);
-                        // 等待播放完成
-                        sink.sleep_until_end();
                         FClient::send_event(FEvent::AudioPlayed { id });
                     }
                 }
@@ -75,7 +74,7 @@ impl AudioDevice {
             })
             .expect("audio sink channel");
     }
-    fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
+    pub fn pcm_bytes_to_source(pcm_bytes: &[u8]) -> impl Source<Item = f32> {
         // 1. 将字节流包装为 Cursor（可读取的缓冲区）
         let mut cursor = Cursor::new(pcm_bytes);
         // 2. 解析 16bit 小端 PCM 数据为 i16 采样值（根据实际格式调整 LittleEndian/BigEndian）

@@ -55,10 +55,12 @@ impl TTSService {
     }
 
     pub fn play(&self, req: TTSPlayRequest) -> Result<()> {
-        WS_SENDER
-            .get()
-            .unwrap()
-            .send(self.providers.prepare_play_message(req))?;
+        let sender = WS_SENDER.get().unwrap();
+
+        self.providers
+            .prepare_play_message(req)
+            .into_iter()
+            .for_each(|msg| sender.send(msg).unwrap());
         Ok(())
     }
 }

@@ -1,8 +1,10 @@
+use std::env;
+
 use reqwest_websocket::Message;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::service::tts::{
-    providers::kokoro::KokoroTTS,
+    providers::{kokoro::KokoroTTS, qwen::QWenTTS},
     service::{TTSEvent, TTSPlayRequest},
 };
 
@@ -11,20 +13,25 @@ mod qwen;
 
 #[derive(Clone, Debug)]
 pub enum TTSProvider {
-    QWEN,
+    QWEN(QWenTTS),
     KOKORO(KokoroTTS),
 }
 
 impl Default for TTSProvider {
     fn default() -> Self {
-        TTSProvider::KOKORO(KokoroTTS::default())
+        let tts = QWenTTS::builder()
+            .api_key(env::var("VITE_DASHSCOPE_API_KEY").unwrap())
+            .build()
+            .unwrap();
+        TTSProvider::QWEN(tts)
+        // TTSProvider::KOKORO(KokoroTTS::default())
     }
 }
 
 impl TTSProvider {
-    pub fn prepare_play_message(&self, req: TTSPlayRequest) -> Message {
+    pub fn prepare_play_message(&self, req: TTSPlayRequest) -> Vec<Message> {
         match self {
-            TTSProvider::QWEN => todo!(),
+            TTSProvider::QWEN(tts) => tts.prepare_play_message(req),
             TTSProvider::KOKORO(tts) => tts.prepare_play_message(req),
         }
     }
@@ -35,14 +42,14 @@ impl TTSProvider {
         ws_msg_rx: UnboundedReceiver<Message>,
     ) {
         match self {
-            TTSProvider::QWEN => todo!(),
+            TTSProvider::QWEN(tts) => tts.event_loop(event_tx, ws_msg_rx),
             TTSProvider::KOKORO(tts) => tts.event_loop(event_tx, ws_msg_rx),
         }
     }
 }
 
 trait Provider {
-    fn prepare_play_message(&self, req: TTSPlayRequest) -> Message;
+    fn prepare_play_message(&self, req: TTSPlayRequest) -> Vec<Message>;
     fn event_loop(
         &self,
         event_tx: tokio::sync::broadcast::Sender<TTSEvent>,

@@ -132,10 +132,10 @@ impl Provider for KokoroTTS {
     fn prepare_play_message(
         &self,
         req: crate::service::tts::service::TTSPlayRequest,
-    ) -> reqwest_websocket::Message {
+    ) -> Vec<reqwest_websocket::Message> {
         let msg = serde_json::to_string(&req).expect("failed to serialize play request");
         log::debug!("sending play request: {msg}");
-        Message::Text(msg.into())
+        vec![Message::Text(msg.into())]
     }
 
     fn event_loop(

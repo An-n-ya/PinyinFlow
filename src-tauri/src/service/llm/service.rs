@@ -46,7 +46,7 @@ impl LlmService {
     }
 
     pub(crate) fn service_for_test() -> Self {
-        dotenvy::from_path(Path::new("../.env.test.local")).unwrap();
+        dotenvy::from_path(Path::new("../.env.local")).unwrap();
         let openai_providers: Vec<_> = LLM_PROVIDER
             .iter()
             .map(|(api, model, url)| {
