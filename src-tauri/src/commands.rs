@@ -7,15 +7,17 @@ use tokio::sync::Mutex;
 
 use crate::{
     database::DataBase,
-    device::tts::WsClient,
     domain::{preferences::UserPreferences, user_profiles::UserProfiles},
-    service::llm::{
-        domain::TaskType,
-        service::LlmService,
-        strategy::{
-            complete::{CompleteBuilder, CompleteContext},
-            proofread::{ProofreadBuilder, ProofreadContext},
+    service::{
+        llm::{
+            domain::TaskType,
+            service::LlmService,
+            strategy::{
+                complete::{CompleteBuilder, CompleteContext},
+                proofread::{ProofreadBuilder, ProofreadContext},
+            },
         },
+        tts::service::{TTSPlayRequest, TTSService},
     },
 };
 
@@ -93,9 +95,9 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 }
 
 #[tauri::command]
-pub async fn play(id: String, input: String) -> TAResult<()> {
-    WsClient::handle_play(PlayRequest { id, input })?;
-    return Ok(());
+pub async fn play(state: State<'_, Mutex<TTSService>>, id: String, input: String) -> TAResult<()> {
+    state.lock().await.play(TTSPlayRequest { id, input })?;
+    Ok(())
 }
 
 #[tauri::command]

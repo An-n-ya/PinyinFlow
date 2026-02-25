@@ -16,8 +16,8 @@ use crate::commands::{
 use crate::database::DataBase;
 use crate::device::audio::AudioDevice;
 use crate::device::frontend::FClient;
-use crate::device::tts::WsClient;
 use crate::service::llm::service::LlmService;
+use crate::service::tts::service::TTSService;
 use chrono::Local;
 use tauri::Manager;
 
@@ -71,11 +71,13 @@ pub fn run() {
             log::info!("setup started");
             // FIXME: ensure env file local path
             dotenvy::from_path(Path::new("../.env.local")).unwrap();
-            let ws_client = WsClient::init("ws://localhost:8000/play")?;
+
+            let tts_service = TTSService::init()?;
             FClient::init(app.handle().clone());
             AudioDevice::init(app.handle().clone())?;
-            AudioDevice::listen(&ws_client);
+            AudioDevice::listen(&tts_service);
             app.manage(Mutex::new(LlmService::init()));
+            app.manage(Mutex::new(tts_service));
             let db = DataBase::init(app.handle())?;
             app.manage(db);
 

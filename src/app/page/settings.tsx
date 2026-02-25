@@ -79,7 +79,6 @@ const nav: navItem[] = [
                         name: '会话补全',
                         defaultChecked: () => getAppState().pref.enableCompleteInput,
                         action: async checked => {
-                            console.info(`pref: ${JSON.stringify(getAppState().pref)}`);
                             produceAppState(draft => {
                                 draft.pref.enableCompleteInput = checked;
                             });
@@ -229,6 +228,3 @@ export function Settings() {
         </SidebarProvider>
     );
 }
-
-// TODO:
-//  - [ ] 引入 zustand 作设置持久化

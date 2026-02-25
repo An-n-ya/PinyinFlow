@@ -1,0 +1,64 @@
+use reqwest_websocket::Message;
+use serde::Serialize;
+use std::sync::OnceLock;
+use tokio::sync::mpsc;
+
+use anyhow::Result;
+use tokio::sync::broadcast;
+
+use crate::{commands::PlayResond, service::tts::providers::TTSProvider};
+
+static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
+
+#[derive(Clone)]
+pub enum TTSEvent {
+    Disconnected,
+    Connected,
+    Play(PlayResond),
+    Binary(Vec<u8>),
+    Close(u16, String),
+}
+
+#[derive(Serialize)]
+pub struct TTSPlayRequest {
+    pub id: String,
+    pub input: String,
+}
+
+#[derive(Clone)]
+pub struct TTSService {
+    providers: TTSProvider,
+    event_tx: broadcast::Sender<TTSEvent>,
+}
+
+impl TTSService {
+    pub fn init() -> Result<Self> {
+        let (tx, rx) = mpsc::unbounded_channel::<Message>();
+        WS_SENDER.set(tx).expect("set sender failed");
+
+        let (event_tx, _) = broadcast::channel(100);
+        let default_tts_provider = TTSProvider::default();
+
+        let event_tx_inner = event_tx.clone();
+        let provider_innder = default_tts_provider.clone();
+
+        provider_innder.event_loop(event_tx_inner, rx);
+
+        Ok(Self {
+            providers: default_tts_provider,
+            event_tx: event_tx,
+        })
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<TTSEvent> {
+        self.event_tx.subscribe()
+    }
+
+    pub fn play(&self, req: TTSPlayRequest) -> Result<()> {
+        WS_SENDER
+            .get()
+            .unwrap()
+            .send(self.providers.prepare_play_message(req))?;
+        Ok(())
+    }
+}

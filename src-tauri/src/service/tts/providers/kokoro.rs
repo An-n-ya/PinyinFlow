@@ -1,7 +1,11 @@
 use std::str::from_utf8;
-use std::sync::OnceLock;
 use std::time::Duration;
 
+use crate::commands::PlayResond;
+use crate::device::frontend::FClient;
+use crate::device::frontend::FEvent;
+use crate::service::tts::providers::Provider;
+use crate::service::tts::service::TTSEvent;
 use anyhow::bail;
 use anyhow::ensure;
 use anyhow::Result;
@@ -15,86 +19,20 @@ use reqwest_websocket::WebSocket;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
-use crate::commands::PlayRequest;
-use crate::commands::PlayResond;
-use crate::device::frontend::FClient;
-use crate::device::frontend::FEvent;
+#[derive(Clone, Debug)]
+pub(crate) struct KokoroTTS {
+    url: String,
+}
 
-static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
+impl Default for KokoroTTS {
+    fn default() -> Self {
+        Self {
+            url: "ws://localhost:8000/play".into(),
+        }
+    }
+}
 
-/// Delay in seconds before reconnecting
 const RECONNECT_DELAY_SECS: u64 = 2;
-
-// TODO: WsEvent::Binary should contains a struct that can unpack and distribute
-#[derive(Clone)]
-pub enum TTSEvent {
-    Disconnected,
-    Connected,
-    Text(String),
-    Play(PlayResond),
-    Binary(Vec<u8>),
-    Close(u16, String),
-}
-
-#[derive(Clone)]
-pub struct WsClient {
-    event_tx: broadcast::Sender<TTSEvent>,
-}
-
-impl WsClient {
-    pub fn init(url: &str) -> Result<Self> {
-        let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-        WS_SENDER.set(tx).expect("set sender failed");
-
-        let url = url.to_string();
-        let (event_tx, _) = broadcast::channel(100);
-        let event_tx_inner = event_tx.clone();
-        tauri::async_runtime::spawn(async move {
-            let client = Client::default();
-
-            loop {
-                let mut websocket = match connect(&client, &url).await {
-                    Ok(ws) => ws,
-                    Err(e) => {
-                        log::error!("WebSocket connection failed: {}", e);
-                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
-                        continue;
-                    }
-                };
-                broadcast_event(&event_tx_inner, TTSEvent::Connected);
-                log::info!("WebSocket connected");
-
-                let disconnected = run_message_loop(&mut websocket, &event_tx_inner, &mut rx).await;
-
-                if disconnected {
-                    broadcast_event(&event_tx_inner, TTSEvent::Disconnected);
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
-                }
-            }
-        });
-
-        let client = Self { event_tx };
-        Ok(client)
-    }
-
-    pub fn subscribe(&self) -> broadcast::Receiver<TTSEvent> {
-        self.event_tx.subscribe()
-    }
-    /// Send text message to the server
-    pub fn handle_play(req: PlayRequest) -> Result<()> {
-        let msg = serde_json::to_string(&req)?;
-        WS_SENDER.get().unwrap().send(Message::Text(msg.into()))?;
-        Ok(())
-    }
-}
 
 /// Broadcast event to subscribers; log at trace level when there are no subscribers
 fn broadcast_event(tx: &broadcast::Sender<TTSEvent>, event: TTSEvent) {
@@ -129,7 +67,7 @@ async fn run_message_loop(
                                 }
                             }
                             Message::Text(text) => {
-                                broadcast_event(event_tx, TTSEvent::Text(text));
+                                unimplemented!("unimplemented message type: {:?}", text)
                             }
                             Message::Binary(bytes) => {
                                 broadcast_event(event_tx, distribute_binary_data(&bytes));
@@ -187,5 +125,56 @@ fn unpack_pcm_data(data: &[u8]) -> Result<TTSEvent> {
         _ => {
             bail!("unsupported magic {magic}")
         }
+    }
+}
+
+impl Provider for KokoroTTS {
+    fn prepare_play_message(
+        &self,
+        req: crate::service::tts::service::TTSPlayRequest,
+    ) -> reqwest_websocket::Message {
+        let msg = serde_json::to_string(&req).expect("failed to serialize play request");
+        log::debug!("sending play request: {msg}");
+        Message::Text(msg.into())
+    }
+
+    fn event_loop(
+        &self,
+        event_tx: tokio::sync::broadcast::Sender<crate::service::tts::service::TTSEvent>,
+        mut ws_msg_rx: tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>,
+    ) {
+        let url = self.url.clone();
+        tauri::async_runtime::spawn(async move {
+            let client = Client::default();
+
+            loop {
+                let mut websocket = match connect(&client, &url).await {
+                    Ok(ws) => ws,
+                    Err(e) => {
+                        log::error!("WebSocket connection failed: {}", e);
+                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                        continue;
+                    }
+                };
+                broadcast_event(&event_tx, TTSEvent::Connected);
+                log::info!("WebSocket connected");
+
+                let disconnected =
+                    run_message_loop(&mut websocket, &event_tx, &mut ws_msg_rx).await;
+
+                if disconnected {
+                    broadcast_event(&event_tx, TTSEvent::Disconnected);
+                    log::warn!(
+                        "WebSocket disconnected, reconnecting in {}s...",
+                        RECONNECT_DELAY_SECS
+                    );
+                    log::warn!(
+                        "WebSocket disconnected, reconnecting in {}s...",
+                        RECONNECT_DELAY_SECS
+                    );
+                    tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                }
+            }
+        });
     }
 }

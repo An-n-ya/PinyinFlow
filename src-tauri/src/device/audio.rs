@@ -1,9 +1,7 @@
 use crate::{
     commands::PlayResond,
-    device::{
-        frontend::{FClient, FEvent},
-        tts::{TTSEvent, WsClient},
-    },
+    device::frontend::{FClient, FEvent},
+    service::tts::service::TTSService,
 };
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -53,13 +51,13 @@ impl AudioDevice {
         });
         Ok(())
     }
-    pub fn listen(ws_client: &WsClient) {
-        let ws_client_clone = ws_client.clone();
+    pub fn listen(tts_service: &TTSService) {
+        let tts_service_clone = tts_service.clone();
         tauri::async_runtime::spawn(async move {
-            let mut receiver = ws_client_clone.subscribe();
+            let mut receiver = tts_service_clone.subscribe();
             while let Ok(event) = receiver.recv().await {
                 match event {
-                    TTSEvent::Play(res) => {
+                    crate::service::tts::service::TTSEvent::Play(res) => {
                         Self::play_pcm_bytes(&res);
                     }
                     _ => {}
