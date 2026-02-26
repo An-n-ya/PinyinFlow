@@ -1,4 +1,4 @@
-import { MessageBubble } from './MesageBubble';
+import { MessageBubble } from './MessageBubble';
 
 import {
     Conversation,
