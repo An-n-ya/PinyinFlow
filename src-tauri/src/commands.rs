@@ -48,12 +48,12 @@ macro_rules! define_crud_commands {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct PlayResond {
+pub struct PlayRequest {
     pub data: Vec<u8>,
     pub id: String,
 }
 #[derive(Serialize, Debug)]
-pub struct PlayRequest {
+pub struct TonePlayRequest {
     input: String,
     id: String,
 }
@@ -73,7 +73,7 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
     log::info!("tone {input}");
     let client = reqwest::Client::new();
 
-    let req_body = PlayRequest {
+    let req_body = TonePlayRequest {
         input: input.to_string(),
         id: "1".to_string(),
     };

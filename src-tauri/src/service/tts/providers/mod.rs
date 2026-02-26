@@ -19,12 +19,12 @@ pub enum TTSProvider {
 
 impl Default for TTSProvider {
     fn default() -> Self {
-        let tts = QWenTTS::builder()
-            .api_key(env::var("VITE_DASHSCOPE_API_KEY").unwrap())
-            .build()
-            .unwrap();
-        TTSProvider::QWEN(tts)
-        // TTSProvider::KOKORO(KokoroTTS::default())
+        // let tts = QWenTTS::builder()
+        //     .api_key(env::var("VITE_DASHSCOPE_API_KEY").unwrap())
+        //     .build()
+        //     .unwrap();
+        // TTSProvider::QWEN(tts)
+        TTSProvider::KOKORO(KokoroTTS::default())
     }
 }
 

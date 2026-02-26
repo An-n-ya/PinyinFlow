@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use anyhow::Result;
 use tokio::sync::broadcast;
 
-use crate::{commands::PlayResond, service::tts::providers::TTSProvider};
+use crate::{commands::PlayRequest, service::tts::providers::TTSProvider};
 
 static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 
@@ -14,7 +14,8 @@ static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 pub enum TTSEvent {
     Disconnected,
     Connected,
-    Play(PlayResond),
+    Play(PlayRequest),
+    Finished { id: String },
     Binary(Vec<u8>),
     Close(u16, String),
 }

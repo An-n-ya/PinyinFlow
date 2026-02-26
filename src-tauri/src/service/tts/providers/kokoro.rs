@@ -1,7 +1,7 @@
 use std::str::from_utf8;
 use std::time::Duration;
 
-use crate::commands::PlayResond;
+use crate::commands::PlayRequest;
 use crate::device::frontend::FClient;
 use crate::device::frontend::FEvent;
 use crate::service::tts::providers::Provider;
@@ -70,7 +70,9 @@ async fn run_message_loop(
                                 unimplemented!("unimplemented message type: {:?}", text)
                             }
                             Message::Binary(bytes) => {
-                                broadcast_event(event_tx, distribute_binary_data(&bytes));
+                                distribute_binary_data(&bytes).into_iter().for_each(|event| {
+                                    broadcast_event(event_tx, event);
+                                });
                             }
                             Message::Close { code, reason } => {
                                 log::info!("server closed connection {} - {}", code, reason);
@@ -97,15 +99,15 @@ async fn run_message_loop(
     }
 }
 
-fn distribute_binary_data(data: &[u8]) -> TTSEvent {
+fn distribute_binary_data(data: &[u8]) -> Vec<TTSEvent> {
     if let Ok(event) = unpack_pcm_data(data) {
         return event;
     }
     log::error!("Failed to unpack binary data");
-    TTSEvent::Binary(data.to_vec())
+    vec![TTSEvent::Binary(data.to_vec())]
 }
 
-fn unpack_pcm_data(data: &[u8]) -> Result<TTSEvent> {
+fn unpack_pcm_data(data: &[u8]) -> Result<Vec<TTSEvent>> {
     ensure!(data.len() > 36);
     let magic_bytes = &data[0..20];
     let binding = String::from_utf8(magic_bytes.to_vec()).unwrap();
@@ -120,7 +122,13 @@ fn unpack_pcm_data(data: &[u8]) -> Result<TTSEvent> {
             });
 
             let pcm_data = data[24..].to_vec();
-            return Ok(TTSEvent::Play(PlayResond { data: pcm_data, id }));
+            return Ok(vec![
+                TTSEvent::Play(PlayRequest {
+                    data: pcm_data,
+                    id: id.clone(),
+                }),
+                TTSEvent::Finished { id },
+            ]);
         }
         _ => {
             bail!("unsupported magic {magic}")

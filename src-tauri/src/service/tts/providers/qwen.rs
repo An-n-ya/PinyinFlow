@@ -1,22 +1,27 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::Local;
+use chrono::Utc;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
 use reqwest::Client;
 use reqwest_websocket::Message;
 use reqwest_websocket::Upgrade;
 use reqwest_websocket::WebSocket;
-use rodio::buffer::SamplesBuffer;
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
-use crate::commands::PlayResond;
+use crate::commands::PlayRequest;
+use crate::device::frontend::FClient;
+use crate::device::frontend::FEvent;
 use crate::service::tts::providers::Provider;
 use crate::service::tts::service::TTSEvent;
 
@@ -34,11 +39,19 @@ impl ToString for SessionMode {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+struct State {
+    cur_req_id: Option<String>,
+    req_res_map: HashMap<String, String>,
+}
+
 #[derive(Clone, Debug, derive_builder::Builder)]
 pub(crate) struct QWenTTS {
     #[builder(default = "Self::default_url()")]
     url: String,
     api_key: String,
+    #[builder(default)]
+    state: Arc<Mutex<State>>,
     #[builder(default)]
     session: SessionInfo,
 }
@@ -56,7 +69,7 @@ enum WsRequest {
     #[serde(rename = "input_text_buffer.append")]
     AppendText { event_id: String, text: String },
     #[serde(rename = "input_text_buffer.commit")]
-    CommitText {},
+    CommitText { event_id: String },
 }
 
 impl WsRequest {
@@ -64,6 +77,11 @@ impl WsRequest {
         let event = serde_json::to_string(self).unwrap();
         if let Err(e) = websocket.send(Message::Text(event)).await {
             log::error!("failed to send websocket event: {}", e);
+        }
+    }
+    pub fn commit_text() -> Self {
+        Self::CommitText {
+            event_id: format!("event_{}", Local::now().timestamp_millis()),
         }
     }
     pub fn session_finish() -> Self {
@@ -100,20 +118,29 @@ pub enum WsResponse {
         event_id: String,
         session: SessionInfo,
     },
+    #[serde(rename = "error")]
+    ResponseError {
+        event_id: String,
+        error: ResponseErrorInfo,
+    },
     #[serde(rename = "input_text_buffer.committed")]
-    TextBufferCommitted { item_id: String },
+    TextBufferCommitted { event_id: String, item_id: String },
     #[serde(rename = "response.created")]
-    ResponseCreated {},
+    ResponseCreated {
+        event_id: String,
+        response: ResponseCreatedInfo,
+    },
     #[serde(rename = "response.output_item.added")]
-    ResponseOutputItemAdded {},
+    ResponseOutputItemAdded { event_id: String },
     #[serde(rename = "response.output_item.done")]
-    ResponseOutputItemDone {},
+    ResponseOutputItemDone { event_id: String },
     #[serde(rename = "response.content_part.added")]
-    ResponseContentPartAdded {},
+    ResponseContentPartAdded { event_id: String },
     #[serde(rename = "response.content_part.done")]
-    ResponseContentPartDone {},
+    ResponseContentPartDone { event_id: String },
     #[serde(rename = "response.audio.delta")]
     AudioDelta {
+        event_id: String,
         delta: String,
         response_id: String,
         item_id: String,
@@ -121,13 +148,40 @@ pub enum WsResponse {
         content_index: usize,
     },
     #[serde(rename = "response.audio.done")]
-    AudioDone {},
+    AudioDone {
+        event_id: String,
+        response_id: String,
+    },
     #[serde(rename = "response.done")]
-    ResponseDone {},
+    ResponseDone {
+        event_id: String,
+        response: ResponseDoneInfo,
+    },
     #[serde(other)]
     Unknown,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ResponseDoneUsage {
+    characters: usize,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ResponseDoneInfo {
+    id: String,
+    usage: ResponseDoneUsage,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ResponseCreatedInfo {
+    id: String,
+    status: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ResponseErrorInfo {
+    code: String,
+    message: String,
+}
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SessionInfo {
     id: Option<String>,
@@ -205,27 +259,44 @@ impl QWenTTS {
                                     use WsResponse::*;
                                     match serde_json::from_str::<WsResponse>(&text) {
                                         Ok(response) => match response {
-                                            SessionCreated{event_id, session}=>{
-                                                broadcast_event(&event_tx, TTSEvent::Connected);
-                                                log::info!("会话创建成功, ID:{}",session.id.unwrap());}
-                                            SessionUpdated{session, ..}=>{log::debug!("配置已更新, ID:{}",session.id.unwrap());}
-                                            SessionFinished {..} => log::info!("session finished"),
-                                            AudioDelta{delta, ..}=>{
-                                                log::info!("收到音频数据, 长度: {} bytes", delta.len());
-                                                let binary_data = BASE64_STANDARD.decode(delta).unwrap();
-
-                                                broadcast_event(&event_tx, TTSEvent::Play(PlayResond{data: binary_data, id: "".into()}));
+                                            SessionCreated{event_id,session}=>{
+                                                broadcast_event(&event_tx,TTSEvent::Connected);
+                                                log::info!("[{}]会话创建成功, ID:{}",event_id, session.id.unwrap());
                                             }
-                                            TextBufferCommitted { item_id } => log::info!("Text Buffer Committed, ID:{}" ,item_id),
-                                            ResponseCreated {  } => log::info!("Response Created"),
-                                            ResponseOutputItemAdded {  } => log::info!("Response Output Item Added"),
-                                            ResponseOutputItemDone {  } => log::info!("Response Output Item Done"),
-                                            ResponseContentPartAdded {  } => log::info!("Response Content Part Added"),
-                                            ResponseContentPartDone {  } => log::info!("Response Content Part Done"),
-                                            AudioDone {  } => log::info!("Audio Done"),
-                                            ResponseDone {  } => log::info!("Response Done"),
+                                            SessionUpdated{event_id, session, ..}=>{log::debug!("[{}]配置已更新, ID:{}",event_id, session.id.unwrap());}
+                                            SessionFinished{event_id}=>log::info!("[{}]session finished", event_id),
+                                            TextBufferCommitted{event_id, item_id}=>log::info!("[{}]Text Buffer Committed ID:{}", event_id,item_id),
+                                            ResponseCreated{event_id, response}=>{
+                                                let mut state = self.state.lock().unwrap();
+                                                let req_id = state.cur_req_id.take();
+                                                state.req_res_map.insert(response.id.clone(), req_id.unwrap());
+                                                log::info!("[{}]Response Created", event_id);
+                                            },
+                                            ResponseOutputItemAdded{event_id}=>log::info!("[{}]Response Output Item Added", event_id),
+                                            ResponseOutputItemDone{event_id}=>log::info!("[{}]Response Output Item Done", event_id),
+                                            ResponseContentPartAdded{event_id}=>log::info!("[{}]Response Content Part Added", event_id),
+                                            ResponseContentPartDone{event_id}=>log::info!("[{}]Response Content Part Done", event_id),
+                                            AudioDelta{event_id, delta, ..}=>{
+                                                log::info!("[{}]收到音频数据, 长度: {} bytes",event_id, delta.len());
+                                                let binary_data=BASE64_STANDARD.decode(delta).unwrap();
+                                                broadcast_event(&event_tx,TTSEvent::Play(PlayRequest{data:binary_data,id:"".into()}));
+                                            }
+                                            AudioDone{event_id, ..}=>log::info!("[{}]Audio Done", event_id),
+                                            ResponseDone{event_id, response}=>{
+                                                let state = self.state.lock().unwrap();
+                                                state.req_res_map.get(&response.id).map(|req_id|{
+                                                    FClient::send_event(FEvent::TTSFinished {
+                                                        timestamp: Utc::now().timestamp_millis() as u64,
+                                                        id: req_id.clone(),
+                                                    });
+                                                    broadcast_event(&event_tx,TTSEvent::Finished{id: req_id.clone()});
+                                                });
+
+                                                log::info!("[{}]Response Done. Cost:{:?}",event_id, response);
+                                            },
+                                            ResponseError { event_id, error } => log::error!("[{}]QWenTTS ERROR: {error:?}", event_id),
                                             Unknown=>{log::warn!("收到了一个暂时没处理的事件类型: {}",text);}
-                                                                                },
+                                                                                    },
                                         Err(e) => log::error!("JSON 解析失败: {}, 原数据: {}", e, text),
                                     }
                                 }
@@ -272,12 +343,20 @@ impl Provider for QWenTTS {
         req: crate::service::tts::service::TTSPlayRequest,
     ) -> Vec<reqwest_websocket::Message> {
         let append_event = serde_json::to_string(&WsRequest::append_text(req.input)).unwrap();
-        let finish_event = serde_json::to_string(&WsRequest::session_finish()).unwrap();
+        let commit_event = serde_json::to_string(&WsRequest::commit_text()).unwrap();
+
+        let mut state = self.state.lock().unwrap();
+        // FIXME: for now we assume that the last request is finished
+        assert!(
+            state.cur_req_id.is_none(),
+            "last request is not finished yet"
+        );
+        state.cur_req_id = Some(req.id);
 
         log::debug!("sending play message: {append_event}");
         vec![
             reqwest_websocket::Message::Text(append_event),
-            reqwest_websocket::Message::Text(finish_event),
+            reqwest_websocket::Message::Text(commit_event),
         ]
     }
 
@@ -354,9 +433,8 @@ mod tests {
         log::debug!("sending play message: {event}");
         tx.send(Message::Text(event)).unwrap();
 
-        // send session finished
-        let event = serde_json::to_string(&WsRequest::session_finish()).unwrap();
-        log::debug!("sending session finished: {event}");
+        let event = serde_json::to_string(&WsRequest::commit_text()).unwrap();
+        log::debug!("sending text commit: {event}");
         tx.send(Message::Text(event)).unwrap();
 
         while let Ok(event) = event_tx.subscribe().recv().await {
