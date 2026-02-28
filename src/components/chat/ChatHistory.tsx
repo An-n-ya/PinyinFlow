@@ -8,7 +8,6 @@ import {
 
 interface ChatHistoryProps {
     messages: MessageType[];
-
 }
 
 export function ChatHistory({ messages }: ChatHistoryProps) {
