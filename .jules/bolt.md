@@ -1,0 +1,4 @@
+
+## 2025-02-28 - Optimizing Parent Re-renders Causing Heavy Child Component Rerenders
+**Learning:** In React applications with Tauri events, parent components like \`Chat.tsx\` may receive frequent state updates from backend streams or playback events (e.g. \`audio-played\`, \`tts-finished\`). This frequent state update causes child components, even structurally heavy ones like \`InputArea.tsx\`, to re-render constantly if their props are not stable and they aren't memoized.
+**Action:** Always verify if child components containing heavy elements (like complex input areas with auto-complete and streaming support) are unintentionally re-rendering due to parent state updates. Wrap such components in \`React.memo()\` and ensure all passed callbacks (like \`submit_pinyin\`) use \`useCallback()\` to maintain stable references. Consider moving state-independent functions outside the component entirely.
