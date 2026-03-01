@@ -1,0 +1,3 @@
+## 2024-05-24 - Memoize InputArea to prevent re-renders on chat updates
+**Learning:** In chat applications, appending a new message updates the main component's state, causing re-renders of the entire view. The `InputArea`, being complex and containing nested AI suggestion components, incurs significant rendering cost if re-evaluated unnecessarily alongside each chat list update.
+**Action:** Wrap chat input components (`InputArea`) in `React.memo` and strictly type/memoize passed callbacks (using `useCallback`) to decouple the input area's rendering lifecycle from the rapidly updating chat message history.
