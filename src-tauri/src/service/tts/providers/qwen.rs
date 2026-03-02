@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
@@ -22,6 +22,7 @@ use tokio::sync::mpsc;
 use crate::commands::PlayRequest;
 use crate::device::frontend::FClient;
 use crate::device::frontend::FEvent;
+use crate::service::tts::providers::EventLoopRet;
 use crate::service::tts::providers::Provider;
 use crate::service::tts::service::TTSEvent;
 
@@ -41,6 +42,7 @@ impl ToString for SessionMode {
 
 #[derive(Clone, Debug, Default)]
 struct State {
+    ready: bool, // TODO: change to status: "ready", "idle", "closing", "building"
     cur_req_id: Option<String>,
     req_res_map: HashMap<String, String>,
 }
@@ -233,15 +235,15 @@ impl QWenTTS {
             .send(websocket)
             .await;
     }
-
     async fn run_message_loop(
         &self,
         websocket: &mut WebSocket,
         event_tx: &broadcast::Sender<TTSEvent>,
-        rx: &mut mpsc::UnboundedReceiver<Message>,
-    ) -> bool {
+        rx: Arc<Mutex<mpsc::UnboundedReceiver<Message>>>,
+    ) -> EventLoopRet {
         self.initialize_connection(websocket).await;
         loop {
+            let mut rx_guard = rx.lock().await;
             tokio::select! {
                 msg = websocket.next() => {
                     match msg {
@@ -251,7 +253,7 @@ impl QWenTTS {
                                     log::debug!("收到 Ping, 发送 Pong");
                                     if let Err(e) = websocket.send(Message::Pong(payload)).await {
                                         log::error!("failed to send Pong: {}", e);
-                                        return true;
+                                        return EventLoopRet::Disconnected;
                                     }
                                 }
                                 Message::Text(text) => {
@@ -260,6 +262,8 @@ impl QWenTTS {
                                     match serde_json::from_str::<WsResponse>(&text) {
                                         Ok(response) => match response {
                                             SessionCreated{event_id,session}=>{
+                                                let mut state = self.state.lock().await;
+                                                state.ready = true;
                                                 broadcast_event(&event_tx,TTSEvent::Connected);
                                                 log::info!("[{}]会话创建成功, ID:{}",event_id, session.id.unwrap());
                                             }
@@ -267,7 +271,7 @@ impl QWenTTS {
                                             SessionFinished{event_id}=>log::info!("[{}]session finished", event_id),
                                             TextBufferCommitted{event_id, item_id}=>log::info!("[{}]Text Buffer Committed ID:{}", event_id,item_id),
                                             ResponseCreated{event_id, response}=>{
-                                                let mut state = self.state.lock().unwrap();
+                                                let mut state = self.state.lock().await;
                                                 let req_id = state.cur_req_id.take();
                                                 state.req_res_map.insert(response.id.clone(), req_id.unwrap());
                                                 log::info!("[{}]Response Created", event_id);
@@ -283,7 +287,7 @@ impl QWenTTS {
                                             }
                                             AudioDone{event_id, ..}=>log::info!("[{}]Audio Done", event_id),
                                             ResponseDone{event_id, response}=>{
-                                                let state = self.state.lock().unwrap();
+                                                let state = self.state.lock().await;
                                                 state.req_res_map.get(&response.id).map(|req_id|{
                                                     FClient::send_event(FEvent::TTSFinished {
                                                         timestamp: Utc::now().timestamp_millis() as u64,
@@ -306,23 +310,32 @@ impl QWenTTS {
                                 Message::Close { code, reason } => {
                                     log::info!("server closed connection {} - {}", code, reason);
                                     broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
-                                    return true;
+                                    return EventLoopRet::Disconnected;
                                 }
                                 _ => {}
                             }
                         }
                         Some(Err(e)) => {
                             log::error!("WebSocket error: {}", e);
-                            return true;
+                            return EventLoopRet::Disconnected;
                         }
-                        None => return true,
+                        None => return EventLoopRet::Disconnected,
                     }
                 }
-                Some(outbound_msg) = rx.recv() => {
+                Some(outbound_msg) = rx_guard.recv() => {
+                    if let Message::Text(t)  = &outbound_msg {
+                        if t.starts_with("Close") {
+                            log::info!("收到关闭请求");
+                            let mut state = self.state.lock().await;
+                            state.ready = false;
+                            websocket.close().await.unwrap();
+                            return EventLoopRet::Close;
+                        }
+                    }
                     log::debug!("sending message: {:?}", outbound_msg);
                     if let Err(e) = websocket.send(outbound_msg).await {
                         log::error!("failed to send message: {}", e);
-                        return true;
+                        return EventLoopRet::Disconnected;
                     }
                 }
             }
@@ -345,7 +358,7 @@ impl Provider for QWenTTS {
         let append_event = serde_json::to_string(&WsRequest::append_text(req.input)).unwrap();
         let commit_event = serde_json::to_string(&WsRequest::commit_text()).unwrap();
 
-        let mut state = self.state.lock().unwrap();
+        let mut state = futures::executor::block_on(self.state.lock());
         // FIXME: for now we assume that the last request is finished
         assert!(
             state.cur_req_id.is_none(),
@@ -363,7 +376,9 @@ impl Provider for QWenTTS {
     fn event_loop(
         &self,
         event_tx: tokio::sync::broadcast::Sender<crate::service::tts::service::TTSEvent>,
-        mut ws_msg_rx: tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>,
+        ws_msg_rx: Arc<
+            tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>>,
+        >,
     ) {
         let tts = self.clone();
         tauri::async_runtime::spawn(async move {
@@ -371,6 +386,7 @@ impl Provider for QWenTTS {
             let client = Client::builder().http1_only().build().unwrap();
 
             loop {
+                // TODO: add heartbeat functionality (if heatbeat {...})
                 let mut websocket = match tts.connect(&client).await {
                     Ok(ws) => ws,
                     Err(e) => {
@@ -381,23 +397,33 @@ impl Provider for QWenTTS {
                 };
 
                 let disconnected = tts
-                    .run_message_loop(&mut websocket, &event_tx, &mut ws_msg_rx)
+                    .run_message_loop(&mut websocket, &event_tx, ws_msg_rx.clone())
                     .await;
 
-                if disconnected {
-                    broadcast_event(&event_tx, TTSEvent::Disconnected);
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                match disconnected {
+                    EventLoopRet::Disconnected => {
+                        broadcast_event(&event_tx, TTSEvent::Disconnected);
+                        log::warn!(
+                            "WebSocket disconnected, reconnecting in {}s...",
+                            RECONNECT_DELAY_SECS
+                        );
+                        log::warn!(
+                            "WebSocket disconnected, reconnecting in {}s...",
+                            RECONNECT_DELAY_SECS
+                        );
+                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                    }
+                    EventLoopRet::Close => {
+                        return;
+                    }
                 }
             }
         });
+    }
+
+    fn is_ready(&self) -> bool {
+        let state = futures::executor::block_on(self.state.lock());
+        state.ready
     }
 }
 

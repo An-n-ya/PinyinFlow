@@ -26,7 +26,8 @@ impl AudioDevice {
     fn check_play_finished(sink: Arc<rodio::Sink>, id: String) {
         tauri::async_runtime::spawn(async move {
             loop {
-                // FIXME: maybe there will be more than one checking threads simultaneously.
+                // FIXME: maybe there will be more than one threads checking simultaneously.
+                //        how to distinguish them in that case?
                 if sink.empty() {
                     FClient::send_event(FEvent::AudioPlayed { id });
                     break;

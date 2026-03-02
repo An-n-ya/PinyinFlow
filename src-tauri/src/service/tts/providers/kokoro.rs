@@ -1,9 +1,12 @@
 use std::str::from_utf8;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 use crate::commands::PlayRequest;
 use crate::device::frontend::FClient;
 use crate::device::frontend::FEvent;
+use crate::service::tts::providers::EventLoopRet;
 use crate::service::tts::providers::Provider;
 use crate::service::tts::service::TTSEvent;
 use anyhow::bail;
@@ -20,7 +23,13 @@ use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 
 #[derive(Clone, Debug)]
+struct State {
+    ready: bool,
+}
+
+#[derive(Clone, Debug)]
 pub(crate) struct KokoroTTS {
+    state: Arc<Mutex<State>>,
     url: String,
 }
 
@@ -28,6 +37,7 @@ impl Default for KokoroTTS {
     fn default() -> Self {
         Self {
             url: "ws://localhost:8000/play".into(),
+            state: Arc::new(Mutex::new(State { ready: false })),
         }
     }
 }
@@ -53,7 +63,7 @@ async fn run_message_loop(
     websocket: &mut WebSocket,
     event_tx: &broadcast::Sender<TTSEvent>,
     rx: &mut mpsc::UnboundedReceiver<Message>,
-) -> bool {
+) -> EventLoopRet {
     loop {
         tokio::select! {
             msg = websocket.next() => {
@@ -63,7 +73,7 @@ async fn run_message_loop(
                             Message::Ping(payload) => {
                                 if let Err(e) = websocket.send(Message::Pong(payload)).await {
                                     log::error!("failed to send Pong: {}", e);
-                                    return true;
+                                    return EventLoopRet::Disconnected;
                                 }
                             }
                             Message::Text(text) => {
@@ -77,22 +87,29 @@ async fn run_message_loop(
                             Message::Close { code, reason } => {
                                 log::info!("server closed connection {} - {}", code, reason);
                                 broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
-                                return true;
+                                return EventLoopRet::Disconnected;
                             }
                             _ => {}
                         }
                     }
                     Some(Err(e)) => {
                         log::error!("WebSocket error: {}", e);
-                        return true;
+                        return EventLoopRet::Disconnected;
                     }
-                    None => return true,
+                    None => return EventLoopRet::Disconnected,
                 }
             }
             Some(outbound_msg) = rx.recv() => {
+                if let Message::Text(t)  = &outbound_msg {
+                    if t.starts_with("Close") {
+                        log::info!("收到关闭请求");
+                        websocket.close().await.unwrap();
+                        return EventLoopRet::Close;
+                    }
+                }
                 if let Err(e) = websocket.send(outbound_msg).await {
                     log::error!("failed to send message: {}", e);
-                    return true;
+                    return EventLoopRet::Disconnected;
                 }
             }
         }
@@ -149,9 +166,12 @@ impl Provider for KokoroTTS {
     fn event_loop(
         &self,
         event_tx: tokio::sync::broadcast::Sender<crate::service::tts::service::TTSEvent>,
-        mut ws_msg_rx: tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>,
+        ws_msg_rx: Arc<
+            tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>>,
+        >,
     ) {
         let url = self.url.clone();
+        let state = self.state.clone();
         tauri::async_runtime::spawn(async move {
             let client = Client::default();
 
@@ -165,24 +185,37 @@ impl Provider for KokoroTTS {
                     }
                 };
                 broadcast_event(&event_tx, TTSEvent::Connected);
+                state.lock().await.ready = true;
                 log::info!("WebSocket connected");
 
-                let disconnected =
-                    run_message_loop(&mut websocket, &event_tx, &mut ws_msg_rx).await;
+                let mut receiver = ws_msg_rx.lock().await;
+                let event_loop_ret =
+                    run_message_loop(&mut websocket, &event_tx, &mut *receiver).await;
 
-                if disconnected {
-                    broadcast_event(&event_tx, TTSEvent::Disconnected);
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    log::warn!(
-                        "WebSocket disconnected, reconnecting in {}s...",
-                        RECONNECT_DELAY_SECS
-                    );
-                    tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                match event_loop_ret {
+                    EventLoopRet::Disconnected => {
+                        broadcast_event(&event_tx, TTSEvent::Disconnected);
+                        log::warn!(
+                            "WebSocket disconnected, reconnecting in {}s...",
+                            RECONNECT_DELAY_SECS
+                        );
+                        log::warn!(
+                            "WebSocket disconnected, reconnecting in {}s...",
+                            RECONNECT_DELAY_SECS
+                        );
+                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                    }
+                    EventLoopRet::Close => {
+                        state.lock().await.ready = false;
+                        return;
+                    }
                 }
             }
         });
+    }
+
+    fn is_ready(&self) -> bool {
+        let state = futures::executor::block_on(self.state.lock());
+        state.ready
     }
 }

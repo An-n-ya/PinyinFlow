@@ -6,7 +6,10 @@ use tokio::sync::mpsc;
 use anyhow::Result;
 use tokio::sync::broadcast;
 
-use crate::{commands::PlayRequest, service::tts::providers::TTSProvider};
+use crate::{
+    commands::PlayRequest,
+    service::tts::providers::{TTSProvider, TTSProviderManager},
+};
 
 static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
 
@@ -28,7 +31,7 @@ pub struct TTSPlayRequest {
 
 #[derive(Clone)]
 pub struct TTSService {
-    providers: TTSProvider,
+    provider_manager: TTSProviderManager,
     event_tx: broadcast::Sender<TTSEvent>,
 }
 
@@ -38,15 +41,11 @@ impl TTSService {
         WS_SENDER.set(tx).expect("set sender failed");
 
         let (event_tx, _) = broadcast::channel(100);
-        let default_tts_provider = TTSProvider::default();
 
         let event_tx_inner = event_tx.clone();
-        let provider_innder = default_tts_provider.clone();
-
-        provider_innder.event_loop(event_tx_inner, rx);
 
         Ok(Self {
-            providers: default_tts_provider,
+            provider_manager: TTSProviderManager::init(event_tx_inner, rx),
             event_tx: event_tx,
         })
     }
@@ -55,13 +54,24 @@ impl TTSService {
         self.event_tx.subscribe()
     }
 
-    pub fn play(&self, req: TTSPlayRequest) -> Result<()> {
+    pub fn play(&mut self, req: TTSPlayRequest) -> Result<()> {
+        // TODO: move WS_SENDER to provider_manager
         let sender = WS_SENDER.get().unwrap();
 
-        self.providers
+        self.provider_manager
+            .selected()
             .prepare_play_message(req)
             .into_iter()
-            .for_each(|msg| sender.send(msg).unwrap());
+            .for_each(|msg| {
+                sender.send(msg).unwrap();
+            });
+
+        Ok(())
+    }
+
+    pub fn close() -> Result<()> {
+        let sender = WS_SENDER.get().unwrap();
+        sender.send(Message::Text("Close".to_string())).unwrap();
         Ok(())
     }
 }
