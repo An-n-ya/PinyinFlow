@@ -1,0 +1,3 @@
+## 2024-05-20 - Icon-Only Button Accessibility Pattern
+**Learning:** Icon-only buttons (like the Close Window 'X' button) often lack both visible context for mouse users and semantic meaning for screen readers. Using `aria-label` alone isn't sufficient for visual users, and a visible label can break the layout.
+**Action:** Consistently wrap icon-only buttons with Radix UI's `Tooltip` component (using `TooltipTrigger asChild`) and include both a visible `<TooltipContent>` for mouse/keyboard users and a hidden `<span className="sr-only">` along with an `aria-label` on the `<button>` itself for robust screen reader support.
