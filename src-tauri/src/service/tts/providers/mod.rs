@@ -70,6 +70,7 @@ impl TTSChannelHub {
 
 #[async_trait]
 pub(crate) trait Provider: Send + Sync + Debug + 'static {
+    fn name(&self) -> String;
     async fn connect(&self, client: &reqwest::Client) -> anyhow::Result<WebSocket>;
 
     async fn on_connected(
@@ -150,7 +151,6 @@ pub fn spawn_event_loop(tts: Arc<dyn Provider>, hub: Arc<TTSChannelHub>) {
 
 #[derive(Clone, Debug)]
 pub struct TTSProvider {
-    pub name: String,
     pub tts: Arc<dyn Provider>,
 }
 
@@ -195,11 +195,9 @@ impl TTSProviderManager {
         Self {
             providers: vec![
                 Some(TTSProvider {
-                    name: "Kokoro".into(),
                     tts: Arc::new(KokoroTTS::default()),
                 }),
                 Some(TTSProvider {
-                    name: "QWen".into(),
                     tts: Arc::new(qwen_tts),
                 }),
             ],
@@ -232,15 +230,16 @@ impl TTSProviderManager {
     }
     pub fn select_by_name(&mut self, tts_name: &str) {
         self.close_selected();
-        self.selected = self
-            .providers
-            .iter_mut()
-            .find(|p| {
-                p.as_ref()
-                    .map_or(false, |provider| provider.name == tts_name)
-            })
-            .unwrap()
-            .take();
+        if let Some(provider) = self.providers.iter_mut().find(|p| {
+            p.as_ref()
+                .map_or(false, |provider| provider.tts.name() == tts_name)
+        }) {
+            self.selected = provider.take();
+        } else {
+            // TODO: broadcast NOT_FOUND event to frontend
+            log::warn!("TTS provider not found: {}", tts_name);
+            return;
+        }
 
         if let Some(provider) = self.selected.as_ref() {
             if !provider.is_ready() {

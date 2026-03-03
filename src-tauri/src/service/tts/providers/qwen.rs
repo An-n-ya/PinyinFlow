@@ -185,6 +185,9 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl Provider for QWenTTS {
+    fn name(&self) -> String {
+        "QWen".into()
+    }
     async fn connect(&self, client: &Client) -> Result<WebSocket> {
         let response = client
             .get(self.url.clone())

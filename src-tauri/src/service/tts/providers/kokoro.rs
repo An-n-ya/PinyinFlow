@@ -81,6 +81,9 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl Provider for KokoroTTS {
+    fn name(&self) -> String {
+        "Kokoro".into()
+    }
     async fn connect(&self, client: &Client) -> Result<WebSocket> {
         let response = client.get(&self.url).upgrade().send().await?;
         let websocket = response.into_websocket().await?;
