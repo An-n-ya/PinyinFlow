@@ -36,7 +36,7 @@ impl AudioDevice {
             }
         });
     }
-    pub fn init(_app: AppHandle) -> Result<()> {
+    pub fn init() -> Result<()> {
         let (tx, rx) = std::sync::mpsc::channel::<AudioRequest>();
         AUDIO_SINK
             .set(tx)

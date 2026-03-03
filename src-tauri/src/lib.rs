@@ -73,8 +73,8 @@ pub fn run() {
             dotenvy::from_path(Path::new("../.env.local")).unwrap();
 
             let tts_service = TTSService::init()?;
-            FClient::init(app.handle().clone());
-            AudioDevice::init(app.handle().clone())?;
+            FClient::init(Some(app.handle().clone()));
+            AudioDevice::init()?;
             AudioDevice::listen(&tts_service);
             app.manage(Mutex::new(LlmService::init()));
             app.manage(Mutex::new(tts_service));

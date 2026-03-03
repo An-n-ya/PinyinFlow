@@ -147,10 +147,45 @@ impl TTSProviderManager {
 #[cfg(test)]
 mod tests {
 
+    use std::{path::Path, time::Duration};
+
+    use crate::device::{audio::AudioDevice, frontend::FClient};
+
     use super::*;
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+        dotenvy::from_path(Path::new("../.env.local")).unwrap();
+        FClient::init(None);
+    }
 
     #[tokio::test]
-    async fn test_qwentts_initialize_connection() -> anyhow::Result<()> {
+    async fn test_switch_tts() -> anyhow::Result<()> {
+        init();
+        let mut servise = TTSService::init().unwrap();
+        let stream_handle =
+            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let sink = Arc::new(rodio::Sink::connect_new(&stream_handle.mixer()));
+        let mut receiver = servise.subscribe();
+        servise.switch_tts("Kokoro")?;
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        servise.switch_tts("QWen")?;
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        servise
+            .play(TTSPlayRequest {
+                id: "()".to_string(),
+                input: "你好".to_string(),
+            })
+            .unwrap();
+        while let Ok(event) = receiver.recv().await {
+            match event {
+                crate::service::tts::service::TTSEvent::Play(res) => {
+                    log::debug!("received event TTSEvent::Play");
+                    let source = AudioDevice::pcm_bytes_to_source(&res.data);
+                    sink.append(source);
+                }
+                _ => {}
+            }
+        }
         Ok(())
     }
 }

@@ -450,7 +450,7 @@ mod tests {
         let tts = QWenTTS::builder()
             .api_key(env::var("VITE_DASHSCOPE_API_KEY").unwrap())
             .build()?;
-        tts.event_loop(event_tx.clone(), rx);
+        tts.event_loop(event_tx.clone(), Arc::new(Mutex::new(rx)));
 
         tokio::time::sleep(Duration::from_secs_f32(0.2)).await;
         let event =

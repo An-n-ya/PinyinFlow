@@ -24,22 +24,26 @@ impl FEvent {
 pub struct FClient {}
 
 impl FClient {
-    pub fn init(app: AppHandle) -> Self {
+    pub fn init(app: Option<AppHandle>) -> Self {
         let (tx, mut rx) = mpsc::unbounded_channel::<FEvent>();
-        EVENT_SENDER.set(tx).expect("set front event sender failed");
-        tauri::async_runtime::spawn(async move {
-            loop {
-                if let Some(event) = rx.recv().await {
-                    app.emit(&event.name(), event)
-                        .expect("emit {event:?} failed");
+        if let Some(app) = app {
+            EVENT_SENDER.set(tx).expect("set front event sender failed");
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    if let Some(event) = rx.recv().await {
+                        app.emit(&event.name(), event)
+                            .expect("emit {event:?} failed");
+                    }
                 }
-            }
-        });
+            });
+        }
         Self {}
     }
 
     pub fn send_event(e: FEvent) {
         log::info!("got event {e:?}");
-        EVENT_SENDER.get().unwrap().send(e).expect("send fevent")
+        if let Some(sender) = EVENT_SENDER.get() {
+            sender.send(e).expect("send failed")
+        }
     }
 }

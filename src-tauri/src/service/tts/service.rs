@@ -74,4 +74,9 @@ impl TTSService {
         sender.send(Message::Text("Close".to_string())).unwrap();
         Ok(())
     }
+
+    pub fn switch_tts(&mut self, tts: &str) -> Result<()> {
+        self.provider_manager.select_by_name(tts);
+        Ok(())
+    }
 }
