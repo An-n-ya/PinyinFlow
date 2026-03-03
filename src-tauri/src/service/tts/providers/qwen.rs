@@ -1,13 +1,18 @@
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::commands::PlayRequest;
+use crate::device::frontend::FClient;
+use crate::device::frontend::FEvent;
+use crate::service::tts::providers::{broadcast_event, Provider};
+use crate::service::tts::service::TTSEvent;
 use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::Local;
 use chrono::Utc;
-use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
 use reqwest::Client;
 use reqwest_websocket::Message;
@@ -16,13 +21,6 @@ use reqwest_websocket::WebSocket;
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::broadcast;
-use tokio::sync::mpsc;
-
-use crate::commands::PlayRequest;
-use crate::device::frontend::FClient;
-use crate::device::frontend::FEvent;
-use crate::service::tts::providers::{broadcast_event, EventLoopRet, Provider};
-use crate::service::tts::service::TTSEvent;
 
 #[derive(Clone, Debug, PartialEq)]
 enum SessionMode {
@@ -181,8 +179,6 @@ impl QWenTTSBuilder {
     }
 }
 
-use async_trait::async_trait;
-
 #[async_trait]
 impl Provider for QWenTTS {
     fn name(&self) -> String {
@@ -212,91 +208,75 @@ impl Provider for QWenTTS {
         Ok(())
     }
 
-    async fn run_message_loop(
+    async fn handle_text(
         &self,
-        websocket: &mut WebSocket,
+        text: String,
         event_tx: &broadcast::Sender<TTSEvent>,
-        rx: &mut mpsc::UnboundedReceiver<Message>,
-    ) -> EventLoopRet {
-        loop {
-            tokio::select! {
-                msg = websocket.next() => {
-                    match msg {
-                        Some(Ok(message)) => {
-                            match message {
-                                Message::Ping(payload) => {
-                                    if let Err(e) = websocket.send(Message::Pong(payload)).await {
-                                        log::error!("failed to send Pong: {}", e);
-                                        return EventLoopRet::Disconnected;
-                                    }
-                                }
-                                Message::Text(text) => {
-                                    use WsResponse::*;
-                                    match serde_json::from_str::<WsResponse>(&text) {
-                                        Ok(response) => match response {
-                                            SessionCreated{event_id,session}=>{
-                                                broadcast_event(&event_tx,TTSEvent::Connected);
-                                                log::info!("[{}]sesion created, ID:{}",event_id, session.id.unwrap());
-                                            }
-                                            SessionUpdated{event_id, session, ..}=>{log::debug!("[{}]session updated, ID:{}",event_id, session.id.unwrap());}
-                                            ResponseCreated{event_id, response}=>{
-                                                let mut state = self.state.lock().await;
-                                                let req_id = state.cur_req_id.take();
-                                                state.req_res_map.insert(response.id.clone(), req_id.unwrap_or_default());
-                                                log::info!("[{}]Response Created", event_id);
-                                            },
-                                            AudioDelta{event_id, delta, ..}=>{
-                                                log::debug!("[{}]received audio data, len: {} bytes",event_id, delta.len());
-                                                let binary_data=BASE64_STANDARD.decode(delta).unwrap();
-                                                broadcast_event(&event_tx,TTSEvent::Play(PlayRequest{data:binary_data,id:"".into()}));
-                                            }
-                                            ResponseDone{event_id, response}=>{
-                                                let state = self.state.lock().await;
-                                                state.req_res_map.get(&response.id).map(|req_id|{
-                                                    FClient::send_event(FEvent::TTSFinished {
-                                                        timestamp: Utc::now().timestamp_millis() as u64,
-                                                        id: req_id.clone(),
-                                                    });
-                                                    broadcast_event(&event_tx,TTSEvent::Finished{id: req_id.clone()});
-                                                });
-                                                log::info!("[{}]Response Done",event_id);
-                                            },
-                                            ResponseError { event_id, error } => log::error!("[{}]QWenTTS ERROR: {error:?}", event_id),
-                                            Unknown=>{}
-                                        },
-                                        Err(e) => log::error!("JSON parse failed: {}, raw data: {}", e, text),
-                                    }
-                                }
-                                Message::Close { code, reason } => {
-                                    log::info!("server closed connection {} - {}", code, reason);
-                                    broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
-                                    return EventLoopRet::Disconnected;
-                                }
-                                _ => {}
-                            }
-                        }
-                        Some(Err(e)) => {
-                            log::error!("WebSocket error: {}", e);
-                            return EventLoopRet::Disconnected;
-                        }
-                        None => return EventLoopRet::Disconnected,
-                    }
+    ) -> Result<()> {
+        use WsResponse::*;
+        match serde_json::from_str::<WsResponse>(&text) {
+            Ok(response) => match response {
+                SessionCreated { event_id, session } => {
+                    broadcast_event(event_tx, TTSEvent::Connected);
+                    log::info!(
+                        "[{}]session created, ID:{}",
+                        event_id,
+                        session.id.unwrap_or_default()
+                    );
                 }
-                Some(outbound_msg) = rx.recv() => {
-                    if let Message::Text(t)  = &outbound_msg {
-                        if t.starts_with("Close") {
-                            log::info!("Closing QWenTTS websocket...");
-                            let _ = websocket.close().await;
-                            return EventLoopRet::Close;
-                        }
-                    }
-                    if let Err(e) = websocket.send(outbound_msg).await {
-                        log::error!("failed to send message: {}", e);
-                        return EventLoopRet::Disconnected;
-                    }
+                SessionUpdated {
+                    event_id, session, ..
+                } => {
+                    log::debug!(
+                        "[{}]session updated, ID:{}",
+                        event_id,
+                        session.id.unwrap_or_default()
+                    );
                 }
-            }
+                ResponseCreated { event_id, response } => {
+                    let mut state = self.state.lock().await;
+                    let req_id = state.cur_req_id.take();
+                    state
+                        .req_res_map
+                        .insert(response.id.clone(), req_id.unwrap_or_default());
+                    log::info!("[{}]Response Created", event_id);
+                }
+                AudioDelta {
+                    event_id, delta, ..
+                } => {
+                    log::debug!(
+                        "[{}]received audio data, len: {} bytes",
+                        event_id,
+                        delta.len()
+                    );
+                    let binary_data = BASE64_STANDARD.decode(delta).unwrap();
+                    broadcast_event(
+                        event_tx,
+                        TTSEvent::Play(PlayRequest {
+                            data: binary_data,
+                            id: "".into(),
+                        }),
+                    );
+                }
+                ResponseDone { event_id, response } => {
+                    let state = self.state.lock().await;
+                    state.req_res_map.get(&response.id).map(|req_id| {
+                        FClient::send_event(FEvent::TTSFinished {
+                            timestamp: Utc::now().timestamp_millis() as u64,
+                            id: req_id.clone(),
+                        });
+                        broadcast_event(event_tx, TTSEvent::Finished { id: req_id.clone() });
+                    });
+                    log::info!("[{}]Response Done", event_id);
+                }
+                ResponseError { event_id, error } => {
+                    log::error!("[{}]QWenTTS ERROR: {error:?}", event_id)
+                }
+                Unknown => {}
+            },
+            Err(e) => log::error!("JSON parse failed: {}, raw data: {}", e, text),
         }
+        Ok(())
     }
 
     fn prepare_play_message(

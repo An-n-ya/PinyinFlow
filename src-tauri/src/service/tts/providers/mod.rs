@@ -3,6 +3,7 @@ use std::time::Duration;
 use std::{env, sync::Arc};
 
 use async_trait::async_trait;
+use futures_util::{SinkExt, StreamExt};
 use reqwest_websocket::{Message, WebSocket};
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
@@ -82,12 +83,82 @@ pub(crate) trait Provider: Send + Sync + Debug + 'static {
         Ok(())
     }
 
+    async fn handle_text(
+        &self,
+        _text: String,
+        _event_tx: &broadcast::Sender<TTSEvent>,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn handle_binary(
+        &self,
+        _bytes: Vec<u8>,
+        _event_tx: &broadcast::Sender<TTSEvent>,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    /// 通用的消息循环框架
     async fn run_message_loop(
         &self,
         websocket: &mut WebSocket,
         event_tx: &broadcast::Sender<TTSEvent>,
         rx: &mut UnboundedReceiver<Message>,
-    ) -> EventLoopRet;
+    ) -> EventLoopRet {
+        loop {
+            tokio::select! {
+                msg = websocket.next() => {
+                    match msg {
+                        Some(Ok(message)) => {
+                            match message {
+                                Message::Ping(payload) => {
+                                    if let Err(e) = websocket.send(Message::Pong(payload)).await {
+                                        log::error!("failed to send Pong: {}", e);
+                                        return EventLoopRet::Disconnected;
+                                    }
+                                }
+                                Message::Text(text) => {
+                                    if let Err(e) = self.handle_text(text, event_tx).await {
+                                        log::error!("Error handling text message: {}", e);
+                                    }
+                                }
+                                Message::Binary(bytes) => {
+                                    if let Err(e) = self.handle_binary(bytes.to_vec(), event_tx).await {
+                                        log::error!("Error handling binary message: {}", e);
+                                    }
+                                }
+                                Message::Close { code, reason } => {
+                                    log::info!("server closed connection {} - {}", code, reason);
+                                    broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
+                                    return EventLoopRet::Disconnected;
+                                }
+                                _ => {}
+                            }
+                        }
+                        Some(Err(e)) => {
+                            log::error!("WebSocket error: {}", e);
+                            return EventLoopRet::Disconnected;
+                        }
+                        None => return EventLoopRet::Disconnected,
+                    }
+                }
+                Some(outbound_msg) = rx.recv() => {
+                    if let Message::Text(t)  = &outbound_msg {
+                        if t.starts_with("Close") {
+                            log::info!("Closing websocket connection of {}...", self.name());
+                            let _ = websocket.close().await;
+                            return EventLoopRet::Close;
+                        }
+                    }
+                    if let Err(e) = websocket.send(outbound_msg).await {
+                        log::error!("failed to send message: {}", e);
+                        return EventLoopRet::Disconnected;
+                    }
+                }
+            }
+        }
+    }
 
     fn prepare_play_message(&self, req: TTSPlayRequest) -> Vec<Message>;
     fn is_ready(&self) -> bool;
