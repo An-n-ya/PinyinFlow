@@ -260,6 +260,10 @@ impl TTSProviderManager {
         }
     }
 
+    fn default_tts_name(&self) -> String {
+        "Kokoro".to_string()
+    }
+
     pub fn hub(&self) -> Arc<TTSChannelHub> {
         self.hub.clone()
     }
@@ -301,9 +305,9 @@ impl TTSProviderManager {
             }
         }
     }
-    pub fn selected(&mut self) -> &TTSProvider {
+    pub fn selected_or_default(&mut self) -> &TTSProvider {
         if self.selected.is_none() {
-            self.select_by_name("Kokoro");
+            self.select_by_name(&self.default_tts_name());
         }
         self.selected.as_ref().unwrap()
     }

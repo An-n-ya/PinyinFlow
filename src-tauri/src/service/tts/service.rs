@@ -51,7 +51,7 @@ impl TTSService {
                 let sender = hub.command_tx();
 
                 self.provider_manager
-                    .selected()
+                    .selected_or_default()
                     .prepare_play_message(req)
                     .into_iter()
                     .for_each(|msg| {
