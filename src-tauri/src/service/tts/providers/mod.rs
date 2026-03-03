@@ -92,10 +92,6 @@ pub(crate) trait Provider: Send + Sync + Debug + 'static {
     fn prepare_play_message(&self, req: TTSPlayRequest) -> Vec<Message>;
     fn is_ready(&self) -> bool;
     fn set_ready(&self, ready: bool);
-
-    fn close(&self) {
-        // 默认不执行任何操作，关闭逻辑由外部通过 Hub 发送 "Close" 指令触发。
-    }
 }
 
 pub fn spawn_event_loop(tts: Arc<dyn Provider>, hub: Arc<TTSChannelHub>) {
@@ -149,33 +145,12 @@ pub fn spawn_event_loop(tts: Arc<dyn Provider>, hub: Arc<TTSChannelHub>) {
     });
 }
 
-#[derive(Clone, Debug)]
-pub struct TTSProvider {
-    pub tts: Arc<dyn Provider>,
-}
-
 pub enum EventLoopRet {
     Disconnected,
     Close,
 }
 
-impl TTSProvider {
-    pub fn prepare_play_message(&self, req: TTSPlayRequest) -> Vec<Message> {
-        self.tts.prepare_play_message(req)
-    }
-
-    pub fn event_loop(&self, hub: Arc<TTSChannelHub>) {
-        spawn_event_loop(self.tts.clone(), hub);
-    }
-
-    pub fn is_ready(&self) -> bool {
-        self.tts.is_ready()
-    }
-
-    pub fn close(&self) {
-        self.tts.close();
-    }
-}
+type TTSProvider = Arc<dyn Provider>;
 
 #[derive(Clone)]
 pub struct TTSProviderManager {
@@ -194,12 +169,8 @@ impl TTSProviderManager {
 
         Self {
             providers: vec![
-                Some(TTSProvider {
-                    tts: Arc::new(KokoroTTS::default()),
-                }),
-                Some(TTSProvider {
-                    tts: Arc::new(qwen_tts),
-                }),
+                Some(Arc::new(KokoroTTS::default())),
+                Some(Arc::new(qwen_tts)),
             ],
             selected: None,
             hub,
@@ -232,7 +203,7 @@ impl TTSProviderManager {
         self.close_selected();
         if let Some(provider) = self.providers.iter_mut().find(|p| {
             p.as_ref()
-                .map_or(false, |provider| provider.tts.name() == tts_name)
+                .map_or(false, |provider| provider.name() == tts_name)
         }) {
             self.selected = provider.take();
         } else {
@@ -243,7 +214,7 @@ impl TTSProviderManager {
 
         if let Some(provider) = self.selected.as_ref() {
             if !provider.is_ready() {
-                provider.event_loop(self.hub());
+                spawn_event_loop(provider.clone(), self.hub());
             }
         }
     }
