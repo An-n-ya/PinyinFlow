@@ -18,6 +18,7 @@ mod kokoro;
 mod qwen;
 
 pub const RECONNECT_DELAY_SECS: u64 = 2;
+pub const KEEPALIVE_DELAY_SECS: u64 = 10;
 
 pub(crate) fn broadcast_event(tx: &broadcast::Sender<TTSEvent>, event: TTSEvent) {
     if tx.send(event).is_err() {
@@ -105,8 +106,20 @@ pub(crate) trait Provider: Send + Sync + Debug + 'static {
         event_tx: &broadcast::Sender<TTSEvent>,
         rx: &mut UnboundedReceiver<Message>,
     ) -> EventLoopRet {
+        let mut heartbeat_interval =
+            tokio::time::interval(Duration::from_secs(KEEPALIVE_DELAY_SECS));
+        // skip ths first tick
+        heartbeat_interval.tick().await;
+
         loop {
             tokio::select! {
+                _ = heartbeat_interval.tick() => {
+                    log::trace!("Sending active Ping to server");
+                    if let Err(e) = websocket.send(Message::Ping(Vec::new().into())).await {
+                        log::error!("failed to send active Ping: {}", e);
+                        return EventLoopRet::Disconnected;
+                    }
+                }
                 msg = websocket.next() => {
                     match msg {
                         Some(Ok(message)) => {
