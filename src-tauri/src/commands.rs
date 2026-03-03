@@ -96,7 +96,11 @@ pub async fn tone(input: &str) -> Result<PinyinRespond, String> {
 
 #[tauri::command]
 pub async fn play(state: State<'_, Mutex<TTSService>>, id: String, input: String) -> TAResult<()> {
-    state.lock().await.play(TTSPlayRequest { id, input })?;
+    use crate::service::tts::service::TTSServiceCommand;
+    state
+        .lock()
+        .await
+        .execute(TTSServiceCommand::Play { id, input })?;
     Ok(())
 }
 

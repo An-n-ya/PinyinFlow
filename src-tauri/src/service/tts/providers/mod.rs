@@ -11,7 +11,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::service::tts::{
     providers::{kokoro::KokoroTTS, qwen::QWenTTS},
-    service::{TTSEvent, TTSPlayRequest, TTSService},
+    service::{TTSEvent, TTSPlayRequest, TTSService, TTSServiceCommand},
 };
 
 mod kokoro;
@@ -99,7 +99,6 @@ pub(crate) trait Provider: Send + Sync + Debug + 'static {
         Ok(())
     }
 
-    /// 通用的消息循环框架
     async fn run_message_loop(
         &self,
         websocket: &mut WebSocket,
@@ -307,36 +306,29 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
         dotenvy::from_path(Path::new("../.env.local")).unwrap();
         FClient::init(None);
+        AudioDevice::init().unwrap();
     }
 
     #[tokio::test]
     async fn test_switch_tts() -> anyhow::Result<()> {
         init();
         let mut service = TTSService::init().unwrap();
-        let stream_handle =
-            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = Arc::new(rodio::Sink::connect_new(&stream_handle.mixer()));
-        let mut receiver = service.subscribe();
-        service.switch_tts("QWen")?;
+        AudioDevice::listen(&service);
+        service.execute(TTSServiceCommand::Switch {
+            name: "QWen".into(),
+        })?;
         tokio::time::sleep(Duration::from_secs(1)).await;
-        service.switch_tts("Kokoro")?;
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        service.execute(TTSServiceCommand::Switch {
+            name: "Kokoro".into(),
+        })?;
+        tokio::time::sleep(Duration::from_secs(1)).await;
         service
-            .play(TTSPlayRequest {
+            .execute(TTSServiceCommand::Play {
                 id: "()".to_string(),
                 input: "你好".to_string(),
             })
             .unwrap();
-        while let Ok(event) = receiver.recv().await {
-            match event {
-                crate::service::tts::service::TTSEvent::Play(res) => {
-                    log::debug!("received event TTSEvent::Play");
-                    let source = AudioDevice::pcm_bytes_to_source(&res.data);
-                    sink.append(source);
-                }
-                _ => {}
-            }
-        }
+        tokio::time::sleep(Duration::from_secs(3)).await;
         Ok(())
     }
 }
