@@ -1,4 +1,5 @@
 import { updatePreferences } from '@/actions/user.action';
+import TTSSettings from '@/components/tts-settings/TTSSettings';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -42,6 +43,7 @@ type settingItem = Switcher | DropDown | Radio;
 type navItem = {
     name: string;
     icon: IconName;
+    child?: React.ReactNode;
     sub?: navItem[];
     settings?: settingItem[];
 };
@@ -100,6 +102,7 @@ const nav: navItem[] = [
             { name: '语言和地区', icon: 'globe' },
         ],
     },
+    { name: '语音模型', icon: 'mic-vocal', child: TTSSettings() },
     { name: '快捷键', icon: 'keyboard' },
     { name: '设备', icon: 'video' },
     { name: '通知', icon: 'bell' },
@@ -210,19 +213,21 @@ export function Settings() {
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
-                    {active.sub?.map((item, i) => (
-                        <>
-                            <h1>{item.name}</h1>
-                            <div
-                                key={i}
-                                className="bg-muted/50 aspect-video max-w-3xl rounded-xl px-4"
-                            >
-                                {item.settings?.map((item, i) => (
-                                    <SettingItem item={item} key={`${item.type}-${i}`} />
-                                ))}{' '}
-                            </div>
-                        </>
-                    ))}
+                    {active.child
+                        ? active.child
+                        : active.sub?.map((item, i) => (
+                              <>
+                                  <h1>{item.name}</h1>
+                                  <div
+                                      key={i}
+                                      className="bg-muted/50 aspect-video max-w-3xl rounded-xl px-4"
+                                  >
+                                      {item.settings?.map((item, i) => (
+                                          <SettingItem item={item} key={`${item.type}-${i}`} />
+                                      ))}{' '}
+                                  </div>
+                              </>
+                          ))}
                 </div>
             </main>
         </SidebarProvider>

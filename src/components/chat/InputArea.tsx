@@ -86,7 +86,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
 
     return (
         <>
-            <PromptInput onSubmit={handleSend} className="my-4 w-full max-w-2xl flex-none">
+            <PromptInput onSubmit={handleSend} className="my-4 w-full max-w-2xl flex-none bg-white">
                 <PromptInputTextarea
                     suggestion={suggestion}
                     value={input}
