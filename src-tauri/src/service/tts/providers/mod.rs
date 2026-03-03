@@ -24,6 +24,50 @@ pub(crate) fn broadcast_event(tx: &broadcast::Sender<TTSEvent>, event: TTSEvent)
     }
 }
 
+/// 统一管理 TTS 通信通道的 Hub
+pub struct TTSChannelHub {
+    /// 指令发送端 (Service -> Provider)
+    command_tx: mpsc::UnboundedSender<Message>,
+    /// 指令接收端 (Provider 消费)
+    command_rx: Arc<tokio::sync::Mutex<mpsc::UnboundedReceiver<Message>>>,
+    /// 事件广播端 (Provider -> Service/Frontend)
+    event_tx: broadcast::Sender<TTSEvent>,
+}
+
+impl TTSChannelHub {
+    pub fn new() -> Self {
+        let (command_tx, command_rx) = mpsc::unbounded_channel();
+        let (event_tx, _) = broadcast::channel(100);
+        Self {
+            command_tx,
+            command_rx: Arc::new(tokio::sync::Mutex::new(command_rx)),
+            event_tx,
+        }
+    }
+
+    /// 获取发往 Provider 的指令发送端
+    pub fn command_tx(&self) -> mpsc::UnboundedSender<Message> {
+        self.command_tx.clone()
+    }
+
+    /// 获取由 Provider 发出的事件广播端
+    pub fn event_tx(&self) -> broadcast::Sender<TTSEvent> {
+        self.event_tx.clone()
+    }
+
+    /// 订阅 Provider 发出的事件
+    pub fn subscribe_events(&self) -> broadcast::Receiver<TTSEvent> {
+        self.event_tx.subscribe()
+    }
+
+    /// 获取供 Provider 使用的指令接收端锁
+    pub(crate) fn command_rx_lock(
+        &self,
+    ) -> Arc<tokio::sync::Mutex<mpsc::UnboundedReceiver<Message>>> {
+        self.command_rx.clone()
+    }
+}
+
 #[async_trait]
 pub(crate) trait Provider: Send + Sync + Debug + 'static {
     async fn connect(&self, client: &reqwest::Client) -> anyhow::Result<WebSocket>;
@@ -49,15 +93,14 @@ pub(crate) trait Provider: Send + Sync + Debug + 'static {
     fn set_ready(&self, ready: bool);
 
     fn close(&self) {
-        TTSService::close().unwrap();
+        // 默认不执行任何操作，关闭逻辑由外部通过 Hub 发送 "Close" 指令触发。
     }
 }
 
-pub fn spawn_event_loop(
-    tts: Arc<dyn Provider>,
-    event_tx: broadcast::Sender<TTSEvent>,
-    ws_msg_rx: Arc<tokio::sync::Mutex<UnboundedReceiver<Message>>>,
-) {
+pub fn spawn_event_loop(tts: Arc<dyn Provider>, hub: Arc<TTSChannelHub>) {
+    let event_tx = hub.event_tx();
+    let command_rx = hub.command_rx_lock();
+
     tauri::async_runtime::spawn(async move {
         let client = reqwest::Client::builder().http1_only().build().unwrap();
 
@@ -80,7 +123,7 @@ pub fn spawn_event_loop(
             tts.set_ready(true);
             log::info!("WebSocket connected");
 
-            let mut receiver = ws_msg_rx.lock().await;
+            let mut receiver = command_rx.lock().await;
             let event_loop_ret = tts
                 .run_message_loop(&mut websocket, &event_tx, &mut *receiver)
                 .await;
@@ -121,12 +164,8 @@ impl TTSProvider {
         self.tts.prepare_play_message(req)
     }
 
-    pub fn event_loop(
-        &self,
-        event_tx: broadcast::Sender<TTSEvent>,
-        ws_msg_rx: Arc<tokio::sync::Mutex<UnboundedReceiver<Message>>>,
-    ) {
-        spawn_event_loop(self.tts.clone(), event_tx, ws_msg_rx);
+    pub fn event_loop(&self, hub: Arc<TTSChannelHub>) {
+        spawn_event_loop(self.tts.clone(), hub);
     }
 
     pub fn is_ready(&self) -> bool {
@@ -142,15 +181,12 @@ impl TTSProvider {
 pub struct TTSProviderManager {
     providers: Vec<Option<TTSProvider>>,
     selected: Option<TTSProvider>,
-    tts_event_sender: broadcast::Sender<TTSEvent>,
-    ws_reciver: Arc<tokio::sync::Mutex<mpsc::UnboundedReceiver<Message>>>,
+    hub: Arc<TTSChannelHub>,
 }
 
 impl TTSProviderManager {
-    pub fn init(
-        tts_event_sender: broadcast::Sender<TTSEvent>,
-        ws_reciver: mpsc::UnboundedReceiver<Message>,
-    ) -> Self {
+    pub fn init() -> Self {
+        let hub = Arc::new(TTSChannelHub::new());
         let qwen_tts = QWenTTS::builder()
             .api_key(env::var("VITE_DASHSCOPE_API_KEY").unwrap_or_default())
             .build()
@@ -168,14 +204,25 @@ impl TTSProviderManager {
                 }),
             ],
             selected: None,
-            tts_event_sender,
-            ws_reciver: Arc::new(tokio::sync::Mutex::new(ws_reciver)),
+            hub,
         }
     }
-    fn close_selected(&mut self) {
+
+    pub fn hub(&self) -> Arc<TTSChannelHub> {
+        self.hub.clone()
+    }
+
+    fn send_close_event(&mut self) {
+        let sender = self.hub().command_tx();
+        if let Err(e) = sender.send(Message::Text("Close".to_string())) {
+            log::error!("failed to send close message: {}", e);
+        }
+    }
+
+    pub fn close_selected(&mut self) {
         let s = self.selected.take();
         if let Some(s) = s {
-            s.close();
+            self.send_close_event();
             self.providers
                 .iter_mut()
                 .find(|p| p.is_none())
@@ -194,11 +241,12 @@ impl TTSProviderManager {
             })
             .unwrap()
             .take();
-        self.selected.as_ref().map(|provider| {
+
+        if let Some(provider) = self.selected.as_ref() {
             if !provider.is_ready() {
-                provider.event_loop(self.tts_event_sender.clone(), self.ws_reciver.clone());
+                provider.event_loop(self.hub());
             }
-        });
+        }
     }
     pub fn selected(&mut self) -> &TTSProvider {
         if self.selected.is_none() {
@@ -228,9 +276,9 @@ mod tests {
             rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Arc::new(rodio::Sink::connect_new(&stream_handle.mixer()));
         let mut receiver = service.subscribe();
-        service.switch_tts("Kokoro")?;
-        tokio::time::sleep(Duration::from_secs(1)).await;
         service.switch_tts("QWen")?;
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        service.switch_tts("Kokoro")?;
         tokio::time::sleep(Duration::from_secs(2)).await;
         service
             .play(TTSPlayRequest {

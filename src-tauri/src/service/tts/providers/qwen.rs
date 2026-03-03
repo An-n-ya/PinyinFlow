@@ -233,9 +233,9 @@ impl Provider for QWenTTS {
                                         Ok(response) => match response {
                                             SessionCreated{event_id,session}=>{
                                                 broadcast_event(&event_tx,TTSEvent::Connected);
-                                                log::info!("[{}]会话创建成功, ID:{}",event_id, session.id.unwrap());
+                                                log::info!("[{}]sesion created, ID:{}",event_id, session.id.unwrap());
                                             }
-                                            SessionUpdated{event_id, session, ..}=>{log::debug!("[{}]配置已更新, ID:{}",event_id, session.id.unwrap());}
+                                            SessionUpdated{event_id, session, ..}=>{log::debug!("[{}]session updated, ID:{}",event_id, session.id.unwrap());}
                                             ResponseCreated{event_id, response}=>{
                                                 let mut state = self.state.lock().await;
                                                 let req_id = state.cur_req_id.take();
@@ -243,7 +243,7 @@ impl Provider for QWenTTS {
                                                 log::info!("[{}]Response Created", event_id);
                                             },
                                             AudioDelta{event_id, delta, ..}=>{
-                                                log::debug!("[{}]收到音频数据, 长度: {} bytes",event_id, delta.len());
+                                                log::debug!("[{}]received audio data, len: {} bytes",event_id, delta.len());
                                                 let binary_data=BASE64_STANDARD.decode(delta).unwrap();
                                                 broadcast_event(&event_tx,TTSEvent::Play(PlayRequest{data:binary_data,id:"".into()}));
                                             }
@@ -261,7 +261,7 @@ impl Provider for QWenTTS {
                                             ResponseError { event_id, error } => log::error!("[{}]QWenTTS ERROR: {error:?}", event_id),
                                             Unknown=>{}
                                         },
-                                        Err(e) => log::error!("JSON 解析失败: {}, 原数据: {}", e, text),
+                                        Err(e) => log::error!("JSON parse failed: {}, raw data: {}", e, text),
                                     }
                                 }
                                 Message::Close { code, reason } => {

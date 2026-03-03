@@ -1,19 +1,11 @@
+use anyhow::Result;
 use reqwest_websocket::Message;
 use serde::Serialize;
-use std::sync::OnceLock;
-use tokio::sync::mpsc;
-
-use anyhow::Result;
 use tokio::sync::broadcast;
 
-use crate::{
-    commands::PlayRequest,
-    service::tts::providers::{TTSProvider, TTSProviderManager},
-};
+use crate::{commands::PlayRequest, service::tts::providers::TTSProviderManager};
 
-static WS_SENDER: OnceLock<mpsc::UnboundedSender<Message>> = OnceLock::new();
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TTSEvent {
     Disconnected,
     Connected,
@@ -32,46 +24,47 @@ pub struct TTSPlayRequest {
 #[derive(Clone)]
 pub struct TTSService {
     provider_manager: TTSProviderManager,
-    event_tx: broadcast::Sender<TTSEvent>,
 }
 
 impl TTSService {
     pub fn init() -> Result<Self> {
-        let (tx, rx) = mpsc::unbounded_channel::<Message>();
-        WS_SENDER.set(tx).expect("set sender failed");
-
-        let (event_tx, _) = broadcast::channel(100);
-
-        let event_tx_inner = event_tx.clone();
-
         Ok(Self {
-            provider_manager: TTSProviderManager::init(event_tx_inner, rx),
-            event_tx: event_tx,
+            provider_manager: TTSProviderManager::init(),
         })
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<TTSEvent> {
-        self.event_tx.subscribe()
+        self.provider_manager.hub().subscribe_events()
     }
 
     pub fn play(&mut self, req: TTSPlayRequest) -> Result<()> {
-        // TODO: move WS_SENDER to provider_manager
-        let sender = WS_SENDER.get().unwrap();
+        let hub = self.provider_manager.hub();
+        let sender = hub.command_tx();
 
         self.provider_manager
             .selected()
             .prepare_play_message(req)
             .into_iter()
             .for_each(|msg| {
-                sender.send(msg).unwrap();
+                if let Err(e) = sender.send(msg) {
+                    log::error!("failed to send play message: {}", e);
+                }
             });
 
         Ok(())
     }
 
-    pub fn close() -> Result<()> {
-        let sender = WS_SENDER.get().unwrap();
-        sender.send(Message::Text("Close".to_string())).unwrap();
+    pub fn close(&mut self) -> Result<()> {
+        self.provider_manager.close_selected();
+        Ok(())
+    }
+
+    /// 这个静态方法可能是为了让后端其他部分能强制关闭，但现在我们建议通过实例调用。
+    /// 为了保持兼容性，我们可以暂时保留一个空的或者报错的实现，或者彻底移除。
+    /// 鉴于之前使用了 OnceLock，这里我们直接移除它，改为由 Service 实例管理。
+    pub fn stop() -> Result<()> {
+        // 如果确实需要全局停止，应该考虑将 Service 放在全局状态中。
+        // 目前先返回 Ok。
         Ok(())
     }
 
