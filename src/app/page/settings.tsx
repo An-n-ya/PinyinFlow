@@ -102,7 +102,7 @@ const nav: navItem[] = [
             { name: '语言和地区', icon: 'globe' },
         ],
     },
-    { name: '语音模型', icon: 'mic-vocal', child: TTSSettings() },
+    { name: '语音模型', icon: 'mic-vocal', child: <TTSSettings /> },
     { name: '快捷键', icon: 'keyboard' },
     { name: '设备', icon: 'video' },
     { name: '通知', icon: 'bell' },
