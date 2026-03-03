@@ -10,8 +10,6 @@ interface MessageBubbleProps {
 
 export const MessageBubble = memo(function MessageBubble({
     message,
-    onPlay,
-    onStop,
 }: MessageBubbleProps) {
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
