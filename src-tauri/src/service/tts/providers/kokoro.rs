@@ -1,13 +1,11 @@
 use std::str::from_utf8;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
 
 use crate::commands::PlayRequest;
 use crate::device::frontend::FClient;
 use crate::device::frontend::FEvent;
-use crate::service::tts::providers::EventLoopRet;
-use crate::service::tts::providers::Provider;
+use crate::service::tts::providers::{broadcast_event, EventLoopRet, Provider};
 use crate::service::tts::service::TTSEvent;
 use anyhow::bail;
 use anyhow::ensure;
@@ -42,83 +40,9 @@ impl Default for KokoroTTS {
     }
 }
 
-const RECONNECT_DELAY_SECS: u64 = 2;
-
-/// Broadcast event to subscribers; log at trace level when there are no subscribers
-fn broadcast_event(tx: &broadcast::Sender<TTSEvent>, event: TTSEvent) {
-    if tx.send(event).is_err() {
-        log::trace!("no subscribers, event not delivered");
-    }
-}
-
-/// Establish WebSocket connection
-async fn connect(client: &Client, url: &str) -> Result<WebSocket> {
-    let response = client.get(url).upgrade().send().await?;
-    let websocket = response.into_websocket().await?;
-    Ok(websocket)
-}
-
-/// Run message loop until disconnected. Returns true when exited due to disconnect (reconnect needed).
-async fn run_message_loop(
-    websocket: &mut WebSocket,
-    event_tx: &broadcast::Sender<TTSEvent>,
-    rx: &mut mpsc::UnboundedReceiver<Message>,
-) -> EventLoopRet {
-    loop {
-        tokio::select! {
-            msg = websocket.next() => {
-                match msg {
-                    Some(Ok(message)) => {
-                        match message {
-                            Message::Ping(payload) => {
-                                if let Err(e) = websocket.send(Message::Pong(payload)).await {
-                                    log::error!("failed to send Pong: {}", e);
-                                    return EventLoopRet::Disconnected;
-                                }
-                            }
-                            Message::Text(text) => {
-                                unimplemented!("unimplemented message type: {:?}", text)
-                            }
-                            Message::Binary(bytes) => {
-                                distribute_binary_data(&bytes).into_iter().for_each(|event| {
-                                    broadcast_event(event_tx, event);
-                                });
-                            }
-                            Message::Close { code, reason } => {
-                                log::info!("server closed connection {} - {}", code, reason);
-                                broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
-                                return EventLoopRet::Disconnected;
-                            }
-                            _ => {}
-                        }
-                    }
-                    Some(Err(e)) => {
-                        log::error!("WebSocket error: {}", e);
-                        return EventLoopRet::Disconnected;
-                    }
-                    None => return EventLoopRet::Disconnected,
-                }
-            }
-            Some(outbound_msg) = rx.recv() => {
-                if let Message::Text(t)  = &outbound_msg {
-                    if t.starts_with("Close") {
-                        log::info!("收到关闭请求");
-                        websocket.close().await.unwrap();
-                        return EventLoopRet::Close;
-                    }
-                }
-                if let Err(e) = websocket.send(outbound_msg).await {
-                    log::error!("failed to send message: {}", e);
-                    return EventLoopRet::Disconnected;
-                }
-            }
-        }
-    }
-}
-
-fn distribute_binary_data(data: &[u8]) -> Vec<TTSEvent> {
-    if let Ok(event) = unpack_pcm_data(data) {
-        return event;
+fn distribute_binary_data(data: &[u8], event_tx: &broadcast::Sender<TTSEvent>) -> Vec<TTSEvent> {
+    if let Ok(events) = unpack_pcm_data(data) {
+        return events;
     }
     log::error!("Failed to unpack binary data");
     vec![TTSEvent::Binary(data.to_vec())]
@@ -153,7 +77,74 @@ fn unpack_pcm_data(data: &[u8]) -> Result<Vec<TTSEvent>> {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl Provider for KokoroTTS {
+    async fn connect(&self, client: &Client) -> Result<WebSocket> {
+        let response = client.get(&self.url).upgrade().send().await?;
+        let websocket = response.into_websocket().await?;
+        Ok(websocket)
+    }
+
+    async fn run_message_loop(
+        &self,
+        websocket: &mut WebSocket,
+        event_tx: &broadcast::Sender<TTSEvent>,
+        rx: &mut mpsc::UnboundedReceiver<Message>,
+    ) -> EventLoopRet {
+        loop {
+            tokio::select! {
+                msg = websocket.next() => {
+                    match msg {
+                        Some(Ok(message)) => {
+                            match message {
+                                Message::Ping(payload) => {
+                                    if let Err(e) = websocket.send(Message::Pong(payload)).await {
+                                        log::error!("failed to send Pong: {}", e);
+                                        return EventLoopRet::Disconnected;
+                                    }
+                                }
+                                Message::Text(text) => {
+                                    log::warn!("unimplemented message type: {:?}", text)
+                                }
+                                Message::Binary(bytes) => {
+                                    distribute_binary_data(&bytes, event_tx).into_iter().for_each(|event| {
+                                        broadcast_event(event_tx, event);
+                                    });
+                                }
+                                Message::Close { code, reason } => {
+                                    log::info!("server closed connection {} - {}", code, reason);
+                                    broadcast_event(event_tx, TTSEvent::Close(code.into(), reason));
+                                    return EventLoopRet::Disconnected;
+                                }
+                                _ => {}
+                            }
+                        }
+                        Some(Err(e)) => {
+                            log::error!("WebSocket error: {}", e);
+                            return EventLoopRet::Disconnected;
+                        }
+                        None => return EventLoopRet::Disconnected,
+                    }
+                }
+                Some(outbound_msg) = rx.recv() => {
+                    if let Message::Text(t)  = &outbound_msg {
+                        if t.starts_with("Close") {
+                            log::info!("Closing Kokoro websocket...");
+                            let _ = websocket.close().await;
+                            return EventLoopRet::Close;
+                        }
+                    }
+                    if let Err(e) = websocket.send(outbound_msg).await {
+                        log::error!("Failed to send message: {}", e);
+                        return EventLoopRet::Disconnected;
+                    }
+                }
+            }
+        }
+    }
+
     fn prepare_play_message(
         &self,
         req: crate::service::tts::service::TTSPlayRequest,
@@ -163,59 +154,12 @@ impl Provider for KokoroTTS {
         vec![Message::Text(msg.into())]
     }
 
-    fn event_loop(
-        &self,
-        event_tx: tokio::sync::broadcast::Sender<crate::service::tts::service::TTSEvent>,
-        ws_msg_rx: Arc<
-            tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<reqwest_websocket::Message>>,
-        >,
-    ) {
-        let url = self.url.clone();
-        let state = self.state.clone();
-        tauri::async_runtime::spawn(async move {
-            let client = Client::default();
-
-            loop {
-                let mut websocket = match connect(&client, &url).await {
-                    Ok(ws) => ws,
-                    Err(e) => {
-                        log::error!("WebSocket connection failed: {}", e);
-                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
-                        continue;
-                    }
-                };
-                broadcast_event(&event_tx, TTSEvent::Connected);
-                state.lock().await.ready = true;
-                log::info!("WebSocket connected");
-
-                let mut receiver = ws_msg_rx.lock().await;
-                let event_loop_ret =
-                    run_message_loop(&mut websocket, &event_tx, &mut *receiver).await;
-
-                match event_loop_ret {
-                    EventLoopRet::Disconnected => {
-                        broadcast_event(&event_tx, TTSEvent::Disconnected);
-                        log::warn!(
-                            "WebSocket disconnected, reconnecting in {}s...",
-                            RECONNECT_DELAY_SECS
-                        );
-                        log::warn!(
-                            "WebSocket disconnected, reconnecting in {}s...",
-                            RECONNECT_DELAY_SECS
-                        );
-                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
-                    }
-                    EventLoopRet::Close => {
-                        state.lock().await.ready = false;
-                        return;
-                    }
-                }
-            }
-        });
-    }
-
     fn is_ready(&self) -> bool {
         let state = futures::executor::block_on(self.state.lock());
         state.ready
+    }
+
+    fn set_ready(&self, ready: bool) {
+        futures::executor::block_on(self.state.lock()).ready = ready;
     }
 }
