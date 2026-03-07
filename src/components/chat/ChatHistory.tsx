@@ -8,8 +8,6 @@ import {
 
 interface ChatHistoryProps {
     messages: MessageType[];
-    onPlay?: (id: number) => void;
-    onStop?: (id: number) => void;
 }
 
 export function ChatHistory({ messages }: ChatHistoryProps) {
