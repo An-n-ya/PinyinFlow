@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getAppState } from '@/lib/store';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { CuboidIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 interface InputAreaProps {
     onSendMessage: (text: string) => void;
@@ -34,7 +34,10 @@ const notTypingKey = [
     'Super',
     'Delete',
 ];
-export function InputArea({ onSendMessage }: InputAreaProps) {
+
+// ⚡ Bolt: Wrapped InputArea in React.memo to prevent unnecessary re-renders
+// when the parent Chat component's messages state updates (e.g., during audio/TTS events).
+export const InputArea = React.memo(function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
     const [suggestion, setSuggestion] = useState([] as string[]);
     const timeoutRef = useRef<NodeJS.Timeout>(null);
@@ -114,4 +117,4 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
             </PromptInput>
         </>
     );
-}
+});
