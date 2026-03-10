@@ -1,0 +1,3 @@
+## 2024-03-10 - Prevent Unnecessary Re-renders in InputArea
+**Learning:** The Chat component's state update (`messages`) on every received event caused the `InputArea` child to re-render. Since `InputArea` only requires the `onSendMessage` function, wrapping it in `React.memo` and wrapping `submit_pinyin` in `useCallback` effectively prunes these unnecessary React render tree updates.
+**Action:** When child components have complex internal state/timeouts (like `InputArea` with `suggestion` overlay and autocomplete debouncing) and only accept static callbacks, ensure the callbacks use `useCallback` and the child uses `React.memo` to isolate their render cycles from chatty parent updates.
