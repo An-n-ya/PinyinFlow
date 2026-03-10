@@ -6,9 +6,7 @@ interface MessageBubbleProps {
     message: MessageType;
 }
 
-export const MessageBubble = memo(function MessageBubble({
-    message,
-}: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
