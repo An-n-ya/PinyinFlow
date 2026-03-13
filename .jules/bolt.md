@@ -1,0 +1,7 @@
+## 2024-05-24 - Typed Message IDs accurately for TypeScript compliance
+**Learning:** `MessageType.id` was previously typed as `number` in `src/vite-env.d.ts` but dynamically assigned as `crypto.randomUUID()` (which returns a `string`) inside `src/components/chat/Chat.tsx`. Passing these values to event handlers typed with `number` (like `onPlay?: (id: number) => void` in `MesageBubble`) would crash standard `pnpm build` verification steps due to TypeScript mismatch. Fixing these is required to make any upstream code valid for merging.
+**Action:** When updating component signatures or tracking variable scopes involving `MessageType.id`, make sure their parameter mappings explicitly use `string`.
+
+## 2024-05-24 - Memoize React Components Effectively
+**Learning:** Wrapping `InputArea` with `React.memo` successfully mitigates a massive render overhead when the parent component (`Chat`) updates its message state. Additionally, separating pure logic (like the async `play` function) out of a React component provides stable references cleanly.
+**Action:** Always complement `React.memo()` with stable function prop references (e.g., using `useCallback` on event handlers like `submit_pinyin` with empty dependency arrays) from the parent, otherwise `memo` evaluates to `false` automatically on re-render.
