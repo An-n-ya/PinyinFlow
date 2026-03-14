@@ -8,11 +8,7 @@ interface MessageBubbleProps {
     onStop?: (id: number) => void;
 }
 
-export const MessageBubble = memo(function MessageBubble({
-    message,
-    onPlay,
-    onStop,
-}: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
