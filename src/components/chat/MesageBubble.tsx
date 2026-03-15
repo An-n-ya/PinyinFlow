@@ -13,6 +13,11 @@ export const MessageBubble = memo(function MessageBubble({
     onPlay,
     onStop,
 }: MessageBubbleProps) {
+    // Keep unused props extracted so they don't trigger ESLint/TS errors
+    // downstream, but prevent TS from warning about them not being used
+    void onPlay;
+    void onStop;
+
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
