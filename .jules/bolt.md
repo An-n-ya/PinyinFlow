@@ -1,0 +1,3 @@
+## 2024-05-24 - Prevent unnecessary InputArea re-renders
+**Learning:** React component re-renders can be expensive when parent state changes frequently (e.g., chat messages array updating). The `InputArea` component re-rendered every time a new message was added or a message updated its state.
+**Action:** Use `React.memo` for the child component (`InputArea`) and `useCallback` for functions passed down as props (`submit_pinyin`) to maintain stable references, preventing expensive re-renders on every parent state change. Also, move static or pure functions (like `play`) outside the component to prevent recreating them on every render.
