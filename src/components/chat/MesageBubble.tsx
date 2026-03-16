@@ -4,8 +4,8 @@ import { Message, MessageContent, MessageResponse } from '../ai-elements/message
 
 interface MessageBubbleProps {
     message: MessageType;
-    onPlay?: (id: number) => void;
-    onStop?: (id: number) => void;
+    onPlay?: (id: string) => void;
+    onStop?: (id: string) => void;
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -13,6 +13,8 @@ export const MessageBubble = memo(function MessageBubble({
     onPlay,
     onStop,
 }: MessageBubbleProps) {
+    void onPlay;
+    void onStop;
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
