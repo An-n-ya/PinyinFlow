@@ -1,0 +1,3 @@
+## 2024-05-24 - React Component Re-render Optimization in Chat.tsx
+**Learning:** In a highly interactive component like `Chat`, passing down non-memoized handlers (e.g., `submit_pinyin`) to child components (e.g., `InputArea`) causes those children to needlessly re-render whenever the parent's state updates (e.g., when new messages arrive). Also, defining static or pure async functions (e.g., `play`) inside the component body recreates them on every render.
+**Action:** Always extract static functions outside the component body. Wrap interactive child components in `React.memo` and ensure the event handlers passed to them are wrapped in `useCallback` to maintain stable references across renders.
