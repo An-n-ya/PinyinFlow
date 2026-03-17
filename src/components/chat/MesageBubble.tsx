@@ -13,6 +13,8 @@ export const MessageBubble = memo(function MessageBubble({
     onPlay,
     onStop,
 }: MessageBubbleProps) {
+    void onPlay;
+    void onStop;
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
     return (
