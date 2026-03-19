@@ -1,0 +1,3 @@
+## 2024-05-19 - Use String::with_capacity for Performance-Critical String Concatenation
+**Learning:** In Rust, building complex strings in loops by creating intermediate `Vec<String>` and using `.join()` (e.g. `history.push(format!("...")); history.join("\n")`) results in multiple unnecessary heap allocations. This is an anti-pattern for performance-sensitive tasks.
+**Action:** When constructing complex strings from collections, prefer `String::with_capacity` followed by `push_str` or `push` calls to minimize heap allocations and avoid intermediate formatted strings.
