@@ -22,16 +22,25 @@ pub struct ReplyContext {
 impl TaskContext for ReplyContext {}
 impl ReplyContext {
     fn context(&self) -> String {
-        let mut history = vec!["【当前上下文】".to_string()];
+        // ⚡ Bolt Optimization: Use String with capacity and push_str instead of Vec::push + join
+        // to avoid multiple heap allocations and intermediate formatted strings.
+        let mut history = String::with_capacity(128 + self.history.len() * 32);
+        history.push_str("【当前上下文】");
         for message in &self.history {
+            history.push('\n');
             match &message.role {
-                MessageRole::Me => history.push(format!("我：{}", message.content)),
+                MessageRole::Me => {
+                    history.push_str("我：");
+                    history.push_str(&message.content);
+                }
                 MessageRole::Opposite(name) => {
-                    history.push(format!("{}：{}", name, message.content))
+                    history.push_str(name);
+                    history.push_str("：");
+                    history.push_str(&message.content);
                 }
             }
         }
-        history.join("\n")
+        history
     }
 }
 
