@@ -14,6 +14,7 @@ import {
     SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAppState, produceAppState } from '@/lib/store';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { X } from 'lucide-react';
@@ -162,60 +163,68 @@ export function Settings() {
     };
     return (
         <SidebarProvider className="items-start">
-            <Sidebar collapsible="none" className="flex h-screen w-40">
-                <SidebarContent>
-                    <SidebarGroup>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {nav.map(item => (
-                                    <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            onClick={e => handleSidebarMenuClick(e, item)}
-                                            isActive={item.name === active.name}
-                                        >
-                                            <a href="#">
-                                                <DynamicIcon name={item.icon} />
-                                                <span>{item.name}</span>
-                                            </a>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
-            </Sidebar>
-            <main className="flex h-screen flex-1 flex-col overflow-hidden">
-                <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                    <div className="flex w-full items-center justify-between gap-2 px-4">
-                        <h1 className="font-bold">{active.name}</h1>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full"
-                            onClick={handleCloseWindow}
-                        >
-                            <X />
-                        </Button>
+            <TooltipProvider>
+                <Sidebar collapsible="none" className="flex h-screen w-40">
+                    <SidebarContent>
+                        <SidebarGroup>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {nav.map(item => (
+                                        <SidebarMenuItem key={item.name}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                onClick={e => handleSidebarMenuClick(e, item)}
+                                                isActive={item.name === active.name}
+                                            >
+                                                <a href="#">
+                                                    <DynamicIcon name={item.icon} />
+                                                    <span>{item.name}</span>
+                                                </a>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    </SidebarContent>
+                </Sidebar>
+                <main className="flex h-screen flex-1 flex-col overflow-hidden">
+                    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                        <div className="flex w-full items-center justify-between gap-2 px-4">
+                            <h1 className="font-bold">{active.name}</h1>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full"
+                                        onClick={handleCloseWindow}
+                                        aria-label="关闭窗口"
+                                    >
+                                        <X />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>关闭窗口</TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </header>
+                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
+                        {active.sub?.map((item, i) => (
+                            <>
+                                <h1>{item.name}</h1>
+                                <div
+                                    key={i}
+                                    className="bg-muted/50 aspect-video max-w-3xl rounded-xl px-4"
+                                >
+                                    {item.settings?.map((item, i) => (
+                                        <SettingItem item={item} key={`${item.type}-${i}`} />
+                                    ))}{' '}
+                                </div>
+                            </>
+                        ))}
                     </div>
-                </header>
-                <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
-                    {active.sub?.map((item, i) => (
-                        <>
-                            <h1>{item.name}</h1>
-                            <div
-                                key={i}
-                                className="bg-muted/50 aspect-video max-w-3xl rounded-xl px-4"
-                            >
-                                {item.settings?.map((item, i) => (
-                                    <SettingItem item={item} key={`${item.type}-${i}`} />
-                                ))}{' '}
-                            </div>
-                        </>
-                    ))}
-                </div>
-            </main>
+                </main>
+            </TooltipProvider>
         </SidebarProvider>
     );
 }
