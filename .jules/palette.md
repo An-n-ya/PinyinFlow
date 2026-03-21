@@ -1,0 +1,3 @@
+## 2024-05-15 - [Tooltip Accessibility on Disabled Buttons]
+**Learning:** Tooltips naturally fail to appear on native HTML buttons when they are set to `disabled` because disabled elements stop emitting pointer and focus events. This creates a severe accessibility flaw where users cannot discover the purpose of grayed-out icon buttons.
+**Action:** When creating tooltips for buttons that may be disabled, wrap the button in an event-receiving `span` and dynamically manage `tabIndex` (e.g., `tabIndex={isDisabled ? 0 : -1}`). Avoid using `role="button"` on the wrapper to prevent double-announcing if the inner element is already a button; rely on the wrapper simply as an event capture layer. Transfer absolute positioning classes to the wrapper to maintain layout.
