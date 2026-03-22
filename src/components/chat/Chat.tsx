@@ -42,16 +42,18 @@ class MessageType {
     }
 }
 
+// Optimization: Moved pure `play` function outside of component to prevent recreation on every render
+async function play(id: string, input: string) {
+    try {
+        let revised_input = await invoke('proofread', { id, input });
+        await invoke('play', { id, input: revised_input });
+    } catch (error_msg) {
+        console.error(error_msg);
+    }
+}
+
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: string, input: string) {
-        try {
-            let revised_input = await invoke('proofread', { id, input });
-            await invoke('play', { id, input: revised_input });
-        } catch (error_msg) {
-            console.error(error_msg);
-        }
-    }
 
     useEffect(() => {
         const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
