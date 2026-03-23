@@ -101,12 +101,18 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                     </PromptInputButton>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <PromptInputSubmit
-                                status="ready"
-                                disabled={!input.trim()}
+                            <span
                                 className="absolute right-1 bottom-1"
-                                aria-label="发送"
-                            />
+                                tabIndex={!input.trim() ? 0 : -1}
+                                role={!input.trim() ? 'button' : undefined}
+                                aria-disabled={!input.trim() ? 'true' : undefined}
+                            >
+                                <PromptInputSubmit
+                                    status="ready"
+                                    disabled={!input.trim()}
+                                    aria-label="发送"
+                                />
+                            </span>
                         </TooltipTrigger>
                         <TooltipContent>发送</TooltipContent>
                     </Tooltip>

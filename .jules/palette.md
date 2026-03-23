@@ -1,0 +1,3 @@
+## 2024-03-24 - Tooltips on Disabled Elements via Wrapper Span
+**Learning:** Tooltips on native disabled buttons do not appear because disabled HTML elements do not fire pointer events (like hover). Wrapping the button in a `span` solves this, but you MUST NEVER apply `role="button"` to that wrapper, as it creates an invalid nested button structure that confuses screen readers.
+**Action:** When enabling tooltips for disabled buttons, wrap them in a `span` with `tabIndex={isDisabled ? 0 : -1}` to ensure keyboard accessibility. Allow the inner button to remain a native `<button disabled>`. Do not add `role="button"` to the wrapper span.
