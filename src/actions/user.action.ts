@@ -29,8 +29,9 @@ export const refreshCurrentUser = async (): Promise<void> => {
         draft.user = user;
         draft.pref = preferences;
     });
-    console.info(`refersh current user: ${JSON.stringify(getAppState().user)}`);
-    console.info(`refersh current pref: ${JSON.stringify(getAppState().pref)}`);
+    // ⚡ Bolt: Avoid eager JSON stringification for better logging performance
+    console.info('refersh current user:', getAppState().user);
+    console.info('refersh current pref:', getAppState().pref);
 };
 
 export const updatePreferences = async (): Promise<void> => {
