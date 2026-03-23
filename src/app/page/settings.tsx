@@ -79,7 +79,8 @@ const nav: navItem[] = [
                         name: '会话补全',
                         defaultChecked: () => getAppState().pref.enableCompleteInput,
                         action: async checked => {
-                            console.info(`pref: ${JSON.stringify(getAppState().pref)}`);
+                            // ⚡ Bolt: Avoid eager JSON stringification for better logging performance
+                            console.info('pref:', getAppState().pref);
                             produceAppState(draft => {
                                 draft.pref.enableCompleteInput = checked;
                             });

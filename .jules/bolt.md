@@ -1,0 +1,2 @@
+
+## 2024-05-18 - Eager JSON Stringification in console.info\n**Learning:** Using `JSON.stringify()` inside `console.info()` or similar logging functions causes the application to serialize objects eagerly on the main thread, leading to potential performance bottlenecks, particularly for large objects like application state. \n**Action:** Pass the object directly to the logging function (e.g., `console.info('message:', obj)`) to allow the browser console to handle the object reference lazily. This improves CPU efficiency by avoiding eager serialization.
