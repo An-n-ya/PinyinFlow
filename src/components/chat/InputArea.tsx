@@ -62,7 +62,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         if (
             getAppState().pref.enableCompleteInput &&
             input.length > 0 &&
-            !notTypingKey.find(value => value === e.key)
+            !notTypingKey.includes(e.key) // Bolt: Prefer includes() over find() for primitive arrays to avoid function call overhead
         ) {
             console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
