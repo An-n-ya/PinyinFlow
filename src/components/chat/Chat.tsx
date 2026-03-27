@@ -42,16 +42,21 @@ class MessageType {
     }
 }
 
+// ⚡ Bolt: Moved static `play` function outside of the `Chat` component definition.
+// Impact: Prevents recreation of the function on every render of the Chat component,
+// reducing memory allocation and CPU overhead, especially since the component re-renders
+// frequently with incoming TTS/audio events.
+async function play(id: string, input: string) {
+    try {
+        let revised_input = await invoke('proofread', { id, input });
+        await invoke('play', { id, input: revised_input });
+    } catch (error_msg) {
+        console.error(error_msg);
+    }
+}
+
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: string, input: string) {
-        try {
-            let revised_input = await invoke('proofread', { id, input });
-            await invoke('play', { id, input: revised_input });
-        } catch (error_msg) {
-            console.error(error_msg);
-        }
-    }
 
     useEffect(() => {
         const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
