@@ -1,0 +1,3 @@
+## 2024-05-24 - Tooltips on Disabled Buttons
+**Learning:** Tooltips do not display on natively disabled HTML buttons because disabled elements do not fire pointer events. To resolve this, wrap disabled buttons in an event-receiving element (e.g., `<span tabIndex={isDisabled ? 0 : -1} aria-disabled={isDisabled ? 'true' : undefined}>`). Attach the `TooltipTrigger` to the wrapper, and transfer layout classes to it. NEVER add `role="button"` to this wrapper span.
+**Action:** When adding tooltips to buttons that can be disabled, always wrap them in an event-receiving span and attach the tooltip trigger to the span.
