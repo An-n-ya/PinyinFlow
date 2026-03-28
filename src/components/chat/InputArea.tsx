@@ -62,7 +62,9 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         if (
             getAppState().pref.enableCompleteInput &&
             input.length > 0 &&
-            !notTypingKey.find(value => value === e.key)
+            // ⚡ Bolt: Using Array.includes() for primitive string matching instead of Array.find() with a callback.
+            // This avoids closure allocation and function call overhead on every keystroke, improving input latency.
+            !notTypingKey.includes(e.key)
         ) {
             console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
