@@ -1,0 +1,3 @@
+## 2024-03-29 - Tooltip Accessibility on Disabled Buttons
+**Learning:** Tooltips do not display on natively disabled HTML buttons because disabled elements don't fire pointer events. Wrapping them in an event-receiving `span` with `tabIndex={0}` correctly enables tooltip interaction, but adding `role="button"` to that wrapper creates nested interactive elements that confuse screen readers.
+**Action:** Always wrap natively disabled buttons in a `span` containing `tabIndex` and `aria-disabled` props without adding `role="button"` when adding `TooltipTrigger`. Ensure focus evaluates reliably by using `.focus()` in test environments.
