@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface MessageType {
-    id: number;
+    id: string;
     text: string;
     sender: 'user' | 'speaker' | 'ai';
     timestamp: number;
