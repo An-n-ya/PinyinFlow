@@ -83,6 +83,8 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         }
     };
 
+    const isDisabled = !input.trim();
+
     return (
         <>
             <PromptInput onSubmit={handleSend} className="my-4 w-full max-w-2xl flex-none">
@@ -100,14 +102,31 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                         <span>模型</span>
                     </PromptInputButton>
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <PromptInputSubmit
-                                status="ready"
-                                disabled={!input.trim()}
-                                className="absolute right-1 bottom-1"
-                                aria-label="发送"
-                            />
-                        </TooltipTrigger>
+                        {isDisabled ? (
+                            <TooltipTrigger asChild>
+                                <span
+                                    tabIndex={0}
+                                    aria-disabled="true"
+                                    className="absolute right-1 bottom-1"
+                                >
+                                    <PromptInputSubmit
+                                        status="ready"
+                                        disabled={true}
+                                        aria-label="发送"
+                                        className="pointer-events-none"
+                                    />
+                                </span>
+                            </TooltipTrigger>
+                        ) : (
+                            <TooltipTrigger asChild>
+                                <PromptInputSubmit
+                                    status="ready"
+                                    disabled={false}
+                                    className="absolute right-1 bottom-1"
+                                    aria-label="发送"
+                                />
+                            </TooltipTrigger>
+                        )}
                         <TooltipContent>发送</TooltipContent>
                     </Tooltip>
                 </PromptInputFooter>
