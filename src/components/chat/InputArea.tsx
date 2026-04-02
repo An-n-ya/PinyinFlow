@@ -62,7 +62,8 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         if (
             getAppState().pref.enableCompleteInput &&
             input.length > 0 &&
-            !notTypingKey.find(value => value === e.key)
+            // Performance: O(n) array traversal using native .includes() is faster than .find() with a callback function for primitive checks
+            !notTypingKey.includes(e.key)
         ) {
             console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
