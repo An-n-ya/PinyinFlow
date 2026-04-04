@@ -1,0 +1,3 @@
+## 2024-04-04 - Disabled Button Tooltip Accessibility
+**Learning:** Tooltips do not display on natively disabled HTML buttons because disabled elements do not fire pointer events. Wrapping the button unconditionally in a span causes accessibility regressions (e.g., aria-describedby applying to the span).
+**Action:** When disabled, wrap the disabled button in a focusable `<span>` (`tabIndex={0}`) inside the `TooltipTrigger`; when active, `TooltipTrigger asChild` must wrap the button directly. Never add `role="button"` to the wrapper span.
