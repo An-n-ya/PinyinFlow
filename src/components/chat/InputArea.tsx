@@ -59,10 +59,13 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         setSuggestion([]);
 
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        // Performance optimization: Using `.includes()` instead of `.find()` with a callback
+        // avoids function execution overhead for each array element, making primitive membership
+        // checks faster during frequent keyboard events.
         if (
             getAppState().pref.enableCompleteInput &&
             input.length > 0 &&
-            !notTypingKey.find(value => value === e.key)
+            !notTypingKey.includes(e.key)
         ) {
             console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
