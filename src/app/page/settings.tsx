@@ -195,6 +195,7 @@ export function Settings() {
                             size="icon"
                             className="rounded-full"
                             onClick={handleCloseWindow}
+                            aria-label="Close window"
                         >
                             <X />
                         </Button>
