@@ -82,6 +82,7 @@ export const ConversationScrollButton = ({
                 size="icon"
                 type="button"
                 variant="outline"
+                aria-label="滚动到底部"
                 {...props}
             >
                 <ArrowDownIcon className="size-4" />
@@ -142,6 +143,7 @@ export const ConversationDownload = ({
             size="icon"
             type="button"
             variant="outline"
+            aria-label="下载对话"
             {...props}
         >
             {children ?? <DownloadIcon className="size-4" />}
