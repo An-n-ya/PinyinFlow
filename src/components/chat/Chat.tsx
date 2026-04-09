@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
-class MessageType {
+export class MessageType {
     id: string = crypto.randomUUID();
     text: string = '';
     sender: 'user' | 'ai' = 'user';

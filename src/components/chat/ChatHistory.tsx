@@ -1,3 +1,4 @@
+import { MessageType } from './Chat';
 import { MessageBubble } from './MesageBubble';
 
 import {
