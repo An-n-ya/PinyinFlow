@@ -1,6 +1,7 @@
 import AudioVisualizer from '@/lib/AudioVisualizer';
 import { memo } from 'react';
 import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
+import { MessageType } from './Chat';
 
 interface MessageBubbleProps {
     message: MessageType;
@@ -10,8 +11,6 @@ interface MessageBubbleProps {
 
 export const MessageBubble = memo(function MessageBubble({
     message,
-    onPlay,
-    onStop,
 }: MessageBubbleProps) {
     const from = message.sender === 'user' ? 'user' : 'assistant';
 
