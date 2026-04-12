@@ -22,7 +22,7 @@ type ReplyCompleteEvent =
       }
     | { event: 'content'; data: string };
 
-const notTypingKey = [
+const notTypingKey = new Set([
     'Escape',
     'Tab',
     'ArrowLeft',
@@ -33,7 +33,7 @@ const notTypingKey = [
     'Enter',
     'Super',
     'Delete',
-];
+]);
 export function InputArea({ onSendMessage }: InputAreaProps) {
     const [input, setInput] = useState('');
     const [suggestion, setSuggestion] = useState([] as string[]);
@@ -62,7 +62,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         if (
             getAppState().pref.enableCompleteInput &&
             input.length > 0 &&
-            !notTypingKey.find(value => value === e.key)
+            !notTypingKey.has(e.key)
         ) {
             console.info(`setting timeout key:${e.key}`);
             timeoutRef.current = setTimeout(async () => {
