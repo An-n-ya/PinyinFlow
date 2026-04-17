@@ -78,7 +78,9 @@ export const MessageAction = ({
         return (
             <TooltipProvider>
                 <Tooltip>
-                    <TooltipTrigger asChild>{button}</TooltipTrigger>
+                    <TooltipTrigger asChild>
+                        {props.disabled ? <span tabIndex={0}>{button}</span> : button}
+                    </TooltipTrigger>
                     <TooltipContent>
                         <p>{tooltip}</p>
                     </TooltipContent>

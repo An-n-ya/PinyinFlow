@@ -963,7 +963,9 @@ export const PromptInputButton = ({
 
     return (
         <Tooltip>
-            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipTrigger asChild>
+                {props.disabled ? <span tabIndex={0}>{button}</span> : button}
+            </TooltipTrigger>
             <TooltipContent side={side}>
                 {tooltipContent}
                 {shortcut && <span className="text-muted-foreground ml-2">{shortcut}</span>}
