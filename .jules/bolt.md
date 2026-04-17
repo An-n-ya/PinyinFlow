@@ -1,0 +1,3 @@
+## 2024-05-18 - Memoize InputArea to Prevent Unnecessary Re-renders
+**Learning:** The `InputArea` component (`src/components/chat/InputArea.tsx`) is heavily utilized and prone to unnecessary re-renders when its parent `Chat` component updates the `messages` state. It relies on being wrapped in `React.memo` and expects stable prop references (e.g., using `useCallback` for functions like `onSendMessage` / `submit_pinyin` passed from the parent) to maintain optimal rendering performance.
+**Action:** When working with frequently updated parent components (like a chat list), always wrap child components (like input areas or independent UI elements) in `React.memo` and ensure callback props are stable using `useCallback`.
