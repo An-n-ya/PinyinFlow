@@ -1,0 +1,3 @@
+## 2024-05-18 - Tooltips on Disabled Buttons
+**Learning:** Tooltips do not display on natively disabled HTML buttons because disabled elements do not fire pointer events. When using Radix UI `TooltipTrigger asChild`, wrapping the button unconditionally in a span causes an accessibility regression where `aria-describedby` applies to the span instead of the active button.
+**Action:** When disabled, conditionally wrap the disabled button in a focusable `<span>` (`tabIndex={0}`) inside the `TooltipTrigger`. When active, `TooltipTrigger asChild` must wrap the button directly. Also, always provide contextual feedback in the tooltip explaining *why* the button is disabled (e.g., "Please enter content" instead of just "Submit").
