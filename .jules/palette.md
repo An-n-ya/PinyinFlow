@@ -1,0 +1,3 @@
+## 2024-04-19 - Tooltip on Disabled Element Wrapper Pattern
+**Learning:** Tooltips using Radix UI's `TooltipTrigger asChild` do not display on natively disabled HTML buttons because disabled elements don't fire pointer events. Conditionally wrapping disabled buttons in a focusable `span` (`tabIndex={0}`) allows the tooltip to show, while active buttons should remain unwrapped.
+**Action:** When adding tooltips to buttons that can be disabled, conditionally render a wrapper `span` when the button is disabled to preserve accessibility and interaction states, and provide a tooltip content that explains *why* the button is disabled.
