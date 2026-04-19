@@ -110,7 +110,7 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                                         status="ready"
                                         disabled={true}
                                         aria-label="发送"
-                                        className="w-full h-full"
+                                        className="h-full w-full"
                                     />
                                 </span>
                             </TooltipTrigger>
