@@ -1,3 +1,4 @@
+import { MessageType } from './Chat';
 import { MessageBubble } from './MesageBubble';
 
 import {
@@ -8,8 +9,8 @@ import {
 
 interface ChatHistoryProps {
     messages: MessageType[];
-    onPlay?: (id: number) => void;
-    onStop?: (id: number) => void;
+    onPlay?: (id: string) => void;
+    onStop?: (id: string) => void;
 }
 
 export function ChatHistory({ messages }: ChatHistoryProps) {
