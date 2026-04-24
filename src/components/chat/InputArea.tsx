@@ -100,15 +100,29 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                         <span>模型</span>
                     </PromptInputButton>
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <PromptInputSubmit
-                                status="ready"
-                                disabled={!input.trim()}
-                                className="absolute right-1 bottom-1"
-                                aria-label="发送"
-                            />
-                        </TooltipTrigger>
-                        <TooltipContent>发送</TooltipContent>
+                        {!input.trim() ? (
+                            <TooltipTrigger asChild>
+                                <span tabIndex={0} className="absolute right-1 bottom-1">
+                                    <PromptInputSubmit
+                                        status="ready"
+                                        disabled={true}
+                                        aria-label="发送"
+                                    />
+                                </span>
+                            </TooltipTrigger>
+                        ) : (
+                            <TooltipTrigger asChild>
+                                <PromptInputSubmit
+                                    status="ready"
+                                    disabled={false}
+                                    className="absolute right-1 bottom-1"
+                                    aria-label="发送"
+                                />
+                            </TooltipTrigger>
+                        )}
+                        <TooltipContent>
+                            {!input.trim() ? '请输入内容后再发送' : '发送'}
+                        </TooltipContent>
                     </Tooltip>
                 </PromptInputFooter>
             </PromptInput>

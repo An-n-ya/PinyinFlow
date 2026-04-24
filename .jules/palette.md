@@ -1,0 +1,3 @@
+## 2024-04-24 - Add tooltip explaining disabled button state
+**Learning:** Adding a helpful tooltip explaining *why* a button is disabled is an excellent accessibility improvement. For natively disabled buttons, the tooltip needs to wrap a focusable span since disabled elements do not fire pointer events.
+**Action:** Always verify if a disabled button lacks context. When adding a tooltip to Radix UI `TooltipTrigger asChild` around a disabled button, use conditional rendering: when disabled, wrap it in a `span` with `tabIndex={0}` to ensure hover/focus events trigger the tooltip. When active, wrap the button directly to ensure appropriate screen reader attributes like `aria-describedby` apply correctly.
