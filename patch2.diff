@@ -1,0 +1,11 @@
+--- src/vite-env.d.ts
++++ src/vite-env.d.ts
+@@ -2,7 +2,7 @@
+
+ interface MessageType {
+-    id: number;
++    id: string;
+     text: string;
+     sender: 'user' | 'speaker' | 'ai';
+     timestamp: number;
+     date: string;
