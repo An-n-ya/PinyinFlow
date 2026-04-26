@@ -1,0 +1,30 @@
+--- src/components/chat/InputArea.tsx
++++ src/components/chat/InputArea.tsx
+@@ -87,14 +87,19 @@
+                     </PromptInputButton>
+                     <Tooltip>
+                         <TooltipTrigger asChild>
+-                            <PromptInputSubmit
+-                                status="ready"
+-                                disabled={!input.trim()}
+-                                className="absolute right-1 bottom-1"
+-                                aria-label="发送"
+-                            />
++                            {!input.trim() ? (
++                                <span tabIndex={0} className="absolute right-1 bottom-1 inline-flex cursor-not-allowed">
++                                    <PromptInputSubmit
++                                        status="ready"
++                                        disabled={true}
++                                    />
++                                </span>
++                            ) : (
++                                <PromptInputSubmit
++                                    status="ready"
++                                    className="absolute right-1 bottom-1"
++                                />
++                            )}
+                         </TooltipTrigger>
+-                        <TooltipContent>发送</TooltipContent>
++                        <TooltipContent>{!input.trim() ? '请输入内容后发送' : '发送'}</TooltipContent>
+                     </Tooltip>
+                 </PromptInputFooter>
