@@ -1,0 +1,3 @@
+## 2024-05-24 - Memoizing UI Components with Frequent Background Events
+**Learning:** The `Chat` component frequently updates its `messages` state in response to numerous backend events from Tauri (`tts-finished`, `audio-played`). Without proper memoization, this causes unnecessary, expensive re-renders of sibling components like `InputArea`, even when their specific props haven't conceptually changed.
+**Action:** When a parent component manages state driven by high-frequency background events, always ensure that static/independent child components are wrapped in `React.memo` and that any callback props passed to them are wrapped in `useCallback`.
