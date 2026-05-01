@@ -1,0 +1,3 @@
+## 2024-05-24 - Disabled Buttons Need Focus Wrappers for Tooltips
+**Learning:** Adding a tooltip to a disabled HTML button often fails because the disabled attribute stops the element from firing pointer events (including mouseenter/mouseleave) and prevents it from gaining focus, meaning the tooltip will never appear.
+**Action:** When adding tooltips to disabled buttons to explain why they are disabled, conditionally wrap the disabled button in a focusable element (e.g., `<span tabIndex={0}>`) and apply `pointer-events-none` to the button itself or rely on its disabled state, so the wrapper can receive focus and trigger the tooltip to provide important context to the user.
