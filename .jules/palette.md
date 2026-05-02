@@ -1,0 +1,3 @@
+## 2024-05-19 - Tooltips on Disabled Buttons
+**Learning:** HTML disabled buttons (`disabled={true}`) do not fire pointer events like `hover`. When creating a React `TooltipTrigger asChild`, wrapping a disabled button will fail to trigger the tooltip because no events are emitted by the button.
+**Action:** When adding tooltips to disabled buttons, conditionally wrap the disabled button in a focusable `span` (e.g. `<span tabIndex={0}>`), moving any absolute positioning classes from the button to the wrapper to preserve the layout. This allows the tooltip to show and ensures the interface remains accessible for users.
