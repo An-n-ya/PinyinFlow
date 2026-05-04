@@ -1,0 +1,3 @@
+## 2026-05-04 - Adding tooltips to disabled elements requires span wrapper
+**Learning:** By default, HTML `disabled` elements do not fire pointer events like `mouseenter` or `mouseleave`, which prevents standard tooltips from appearing. This is a common accessibility issue where users cannot discover *why* an action is disabled.
+**Action:** When adding tooltips to disabled buttons, conditionally wrap the disabled element in a focusable `span` (e.g., `<span tabIndex={0}>`) and attach the tooltip trigger to the wrapper instead. Remember to transfer any absolute positioning classes to the wrapper to maintain layout.
