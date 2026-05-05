@@ -1,0 +1,3 @@
+## 2024-05-05 - [Memoize InputArea in Chat component]
+**Learning:** In the `Chat` component, frequent backend events like `tts-finished` and `audio-played` trigger updates to the `messages` state. This causes unnecessary re-renders of the child `InputArea` component on every event, leading to potential input lag and performance issues since it wasn't memoized.
+**Action:** When a parent component updates frequently due to non-UI driven events (like backend updates), proactively wrap complex child components (especially those handling text input) in `React.memo` and provide stable function references using `useCallback` to prevent unnecessary re-rendering.
