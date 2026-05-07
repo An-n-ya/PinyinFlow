@@ -1,0 +1,3 @@
+## 2024-05-07 - Tooltips on Disabled Elements with Positioning
+**Learning:** When using a Radix UI `TooltipTrigger asChild` around a disabled element, the tooltip doesn't trigger because the disabled element does not fire pointer events. The common fix is to conditionally wrap the disabled element in a `<span tabIndex={0}>`. However, if the target element uses absolute positioning classes (e.g. `absolute right-1 bottom-1`), these positioning classes MUST be moved from the disabled element to the wrapping span. Otherwise, the wrapper breaks the visual layout.
+**Action:** When adding focusable `span` wrappers for disabled tooltips, always inspect the original element's classes. Transfer absolute positioning classes to the wrapper span to ensure layout consistency.
