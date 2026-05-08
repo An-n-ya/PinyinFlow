@@ -1,0 +1,3 @@
+## 2024-05-08 - Accessible Tooltips for Disabled Positioned Elements
+**Learning:** When using Radix UI tooltips on disabled HTML buttons that have absolute positioning, native pointer events are blocked so the tooltip won't trigger. Wrapping the disabled element in a focusable `span` captures the events, but you must transfer the absolute positioning classes (like `absolute right-1 bottom-1`) from the button to the `span` wrapper to maintain the correct visual layout.
+**Action:** Always transfer layout/positioning classes to the wrapper `span` when adding tooltips to disabled, absolutely positioned elements to prevent layout breaks.
