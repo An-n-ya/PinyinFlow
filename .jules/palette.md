@@ -1,0 +1,3 @@
+## 2024-05-18 - Wrapping disabled absolutely-positioned elements
+**Learning:** When wrapping a disabled button in a focusable `span` to enable tooltips (since disabled elements don't fire pointer events), if the original element had absolute positioning, those positioning classes must be moved to the wrapper `span`. Otherwise, the positioning breaks because the wrapper assumes static flow.
+**Action:** When adding focusable wrappers for disabled elements inside `TooltipTrigger`, always transfer layout and positioning classes (`absolute`, `right-*`, `bottom-*`, etc.) from the child element to the wrapper to maintain correct layout.
