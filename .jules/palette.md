@@ -1,0 +1,3 @@
+## 2025-03-08 - Tooltip on Disabled Element Pattern
+**Learning:** Adding a tooltip to a disabled HTML button does not work out-of-the-box because disabled elements block pointer events (like hover), preventing the tooltip trigger from recognizing the user interaction. Wrapping the button unconditionally can cause accessibility and formatting issues.
+**Action:** When adding tooltips to disabled elements, conditionally wrap the disabled element in a focusable `span` (e.g., `<span tabIndex={0}>`) and move any positioning CSS classes (like `absolute right-1 bottom-1`) from the element to the wrapper to maintain layout. Ensure the tooltip content dynamically explains *why* the element is disabled, and do not unconditionally wrap active elements.
