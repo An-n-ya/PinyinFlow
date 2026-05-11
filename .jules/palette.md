@@ -1,0 +1,3 @@
+## 2024-05-11 - Tooltips on Disabled Elements
+**Learning:** Disabled HTML elements (like buttons) do not natively fire pointer events, preventing tooltips from appearing. Radix UI's `TooltipTrigger` expects an interactive element to trigger the tooltip on hover or focus.
+**Action:** When adding tooltips to disabled buttons, conditionally wrap the disabled button in a focusable `span` (e.g., `<span tabIndex={0}>`) within the tooltip trigger. Transfer positioning classes (like `absolute`) to the wrapper to maintain layout. Provide a clear tooltip message explaining *why* the element is disabled to improve UX.
