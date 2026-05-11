@@ -1,0 +1,3 @@
+## 2024-05-11 - Prevent InputArea Re-renders during Chat State Updates
+**Learning:** Frequent state updates in a parent component (`Chat.tsx` handling `audio-played` and `tts-finished` events) can cause complex child components like `InputArea` to re-render unnecessarily, degrading typing responsiveness and wasting CPU cycles.
+**Action:** When a child component relies on stable props (like functions) and shouldn't update with every parent state change, wrap the child in `React.memo` and wrap its dependent callback props in `useCallback`. This effectively isolates the child component's render cycle from the parent's frequent, unrelated state updates.
