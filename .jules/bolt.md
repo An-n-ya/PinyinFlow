@@ -1,0 +1,3 @@
+## 2024-05-24 - Memoizing React components with frequent parent state updates
+**Learning:** In React, when a parent component updates its state frequently (e.g., from event listeners like `tts-finished` or `audio-played`), all its children will re-render by default. If a child component like an input area doesn't depend on that frequently changing state, memoizing it using `React.memo` and passing stable callback references via `useCallback` significantly improves rendering performance by preventing unnecessary re-renders of the child.
+**Action:** Use `React.memo` for static or independent child components and `useCallback` for their callback props in parent components that experience frequent state updates, to prevent unnecessary re-rendering bottlenecks.
