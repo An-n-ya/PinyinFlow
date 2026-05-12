@@ -83,6 +83,17 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
         }
     };
 
+    const isDisabled = !input.trim();
+
+    const submitButton = (
+        <PromptInputSubmit
+            status="ready"
+            disabled={isDisabled}
+            className={isDisabled ? '' : 'absolute right-1 bottom-1'}
+            aria-label="发送"
+        />
+    );
+
     return (
         <>
             <PromptInput onSubmit={handleSend} className="my-4 w-full max-w-2xl flex-none">
@@ -101,14 +112,15 @@ export function InputArea({ onSendMessage }: InputAreaProps) {
                     </PromptInputButton>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <PromptInputSubmit
-                                status="ready"
-                                disabled={!input.trim()}
-                                className="absolute right-1 bottom-1"
-                                aria-label="发送"
-                            />
+                            {isDisabled ? (
+                                <span tabIndex={0} className="absolute right-1 bottom-1">
+                                    {submitButton}
+                                </span>
+                            ) : (
+                                submitButton
+                            )}
                         </TooltipTrigger>
-                        <TooltipContent>发送</TooltipContent>
+                        <TooltipContent>{isDisabled ? '请输入内容' : '发送'}</TooltipContent>
                     </Tooltip>
                 </PromptInputFooter>
             </PromptInput>
