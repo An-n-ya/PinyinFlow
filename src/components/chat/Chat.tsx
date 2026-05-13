@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ChatHistory } from './ChatHistory';
 import { InputArea } from './InputArea';
 
@@ -44,14 +44,18 @@ class MessageType {
 
 export default function Chat() {
     const [messages, setMessages] = useState<MessageType[]>(TEST_DATA);
-    async function play(id: string, input: string) {
+
+    // ⚡ Bolt: Wrapped `play` function in useCallback.
+    // This prevents recreation of the function on every render, allowing `submit_pinyin`
+    // (which depends on it) to remain stable, thereby preserving the `React.memo` optimization on `InputArea`.
+    const play = useCallback(async (id: string, input: string) => {
         try {
             let revised_input = await invoke('proofread', { id, input });
             await invoke('play', { id, input: revised_input });
         } catch (error_msg) {
             console.error(error_msg);
         }
-    }
+    }, []);
 
     useEffect(() => {
         const unlistenPromise = listen<{ AudioPlayed: { id: string } }>('audio-played', event => {
@@ -78,12 +82,18 @@ export default function Chat() {
         };
     }, []);
 
-    async function submit_pinyin(pinyin: string) {
-        console.info(`handle message ${pinyin}`);
-        const newMsg = MessageType.new_user(pinyin);
-        setMessages(prev => [...prev, newMsg]);
-        play(newMsg.id, pinyin);
-    }
+    // ⚡ Bolt: Wrapped `submit_pinyin` function in useCallback.
+    // This ensures a stable reference is passed to the `React.memo` optimized `InputArea`,
+    // preventing unnecessary re-renders of the input area when `messages` updates.
+    const submit_pinyin = useCallback(
+        async (pinyin: string) => {
+            console.info(`handle message ${pinyin}`);
+            const newMsg = MessageType.new_user(pinyin);
+            setMessages(prev => [...prev, newMsg]);
+            play(newMsg.id, pinyin);
+        },
+        [play]
+    );
     return (
         <div className="flex flex-1 flex-col bg-slate-50">
             <div className="mx-auto flex size-full max-w-md flex-1 flex-col">
